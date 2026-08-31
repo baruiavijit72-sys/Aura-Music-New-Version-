@@ -285,11 +285,22 @@ fun EqualizerScreen(
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Acoustic Enhancements",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Acoustic Enhancements",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Real-time DSP AudioFx",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AuraSecondary
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -297,33 +308,101 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    DialKnob(
-                        value = sound.bassBoost,
-                        onValueChange = { viewModel.updateBassBoost(it) },
-                        label = "Bass Boost",
-                        activeColor = Color(0xFFEC4899)
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        DialKnob(
+                            value = sound.bassBoost,
+                            onValueChange = { viewModel.updateBassBoost(it) },
+                            label = "Bass Boost",
+                            activeColor = Color(0xFFEC4899)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateBassBoost((sound.bassBoost - 0.05f).coerceAtLeast(0f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(14.dp))
+                            }
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateBassBoost((sound.bassBoost + 0.05f).coerceAtMost(1f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
 
-                    DialKnob(
-                        value = sound.virtualizer3D,
-                        onValueChange = { viewModel.updateVirtualizer(it) },
-                        label = "3D Virtualizer",
-                        activeColor = AuraSecondary
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        DialKnob(
+                            value = sound.virtualizer3D,
+                            onValueChange = { viewModel.updateVirtualizer(it) },
+                            label = "3D Virtualizer",
+                            activeColor = AuraSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateVirtualizer((sound.virtualizer3D - 0.05f).coerceAtLeast(0f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(14.dp))
+                            }
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateVirtualizer((sound.virtualizer3D + 0.05f).coerceAtMost(1f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
 
-                    DialKnob(
-                        value = sound.trebleBoost,
-                        onValueChange = { viewModel.updateTrebleBoost(it) },
-                        label = "Treble Boost",
-                        activeColor = AuraPrimary
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        DialKnob(
+                            value = sound.trebleBoost,
+                            onValueChange = { viewModel.updateTrebleBoost(it) },
+                            label = "Treble Boost",
+                            activeColor = AuraPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateTrebleBoost((sound.trebleBoost - 0.05f).coerceAtLeast(0f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(14.dp))
+                            }
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateTrebleBoost((sound.trebleBoost + 0.05f).coerceAtMost(1f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
 
-                    DialKnob(
-                        value = sound.volumeBoost,
-                        onValueChange = { viewModel.updateVolumeBoost(it) },
-                        label = "Loudness",
-                        activeColor = Color(0xFF10B981)
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        DialKnob(
+                            value = sound.volumeBoost,
+                            onValueChange = { viewModel.updateVolumeBoost(it) },
+                            label = "Loudness",
+                            activeColor = Color(0xFF10B981)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateVolumeBoost((sound.volumeBoost - 0.05f).coerceAtLeast(0f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(14.dp))
+                            }
+                            FilledTonalIconButton(
+                                onClick = { viewModel.updateVolumeBoost((sound.volumeBoost + 0.05f).coerceAtMost(1f)) },
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
                 }
             }
         }

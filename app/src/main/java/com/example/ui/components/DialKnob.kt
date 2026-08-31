@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -33,6 +35,9 @@ fun DialKnob(
     val startAngle = 135f
     val sweepAngle = 270f
 
+    val currentValue by rememberUpdatedState(value)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -41,11 +46,32 @@ fun DialKnob(
             modifier = Modifier
                 .size(76.dp)
                 .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val dx = offset.x - centerX
+                        val dy = offset.y - centerY
+                        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                        if (angle < 0) angle += 360f
+
+                        // Map angle to 0..1 based on startAngle = 135 to 405 (45)
+                        val normalizedAngle = when {
+                            angle >= 135f -> angle - 135f
+                            angle <= 45f -> (360f - 135f) + angle
+                            else -> if (angle < 90f) 270f else 0f
+                        }
+                        val computedValue = (normalizedAngle / sweepAngle).coerceIn(0f, 1f)
+                        currentOnValueChange(computedValue)
+                    }
+                }
+                .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
-                        val delta = -dragAmount.y * 0.008f
-                        val newValue = (value + delta).coerceIn(0f, 1f)
-                        onValueChange(newValue)
+                        // Supports vertical drag (drag up to increase, down to decrease)
+                        // and horizontal drag (drag right to increase, left to decrease)
+                        val delta = (-dragAmount.y * 0.007f) + (dragAmount.x * 0.007f)
+                        val newValue = (currentValue + delta).coerceIn(0f, 1f)
+                        currentOnValueChange(newValue)
                     }
                 },
             contentAlignment = Alignment.Center
@@ -56,17 +82,17 @@ fun DialKnob(
 
                 // Background track arc
                 drawArc(
-                    color = Color.DarkGray.copy(alpha = 0.4f),
+                    color = Color.DarkGray.copy(alpha = 0.45f),
                     startAngle = startAngle,
                     sweepAngle = sweepAngle,
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
-                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                    size = Size(radius * 2, radius * 2),
                     style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
                 )
 
                 // Active value arc
-                val activeSweep = sweepAngle * value
+                val activeSweep = (sweepAngle * currentValue).coerceIn(0.1f, sweepAngle)
                 drawArc(
                     brush = Brush.sweepGradient(
                         colors = listOf(activeColor, glowColor, activeColor)
@@ -75,7 +101,7 @@ fun DialKnob(
                     sweepAngle = activeSweep,
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
-                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                    size = Size(radius * 2, radius * 2),
                     style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round)
                 )
 
@@ -101,7 +127,7 @@ fun DialKnob(
 
             // Percentage readout
             Text(
-                text = "${(value * 100).toInt()}%",
+                text = "${(currentValue * 100).toInt()}%",
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold

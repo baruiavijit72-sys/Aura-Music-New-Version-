@@ -281,17 +281,28 @@ fun HomeScreen(
                         )
                     }
 
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     OutlinedButton(
-                        onClick = { viewModel.navigateTo(AppScreen.LIBRARY) },
+                        onClick = {
+                            viewModel.scanDeviceStorage(context)
+                        },
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        if (viewModel.isScanningDeviceStorage) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = AuraPrimary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Rescan", style = MaterialTheme.typography.labelSmall)
+                        Text(if (viewModel.isScanningDeviceStorage) "Scanning..." else "Rescan", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }

@@ -295,73 +295,9 @@ object MusicRepository {
         )
     )
 
-    val sampleTransferLogs: List<TransferLog> = listOf(
-        TransferLog(
-            id = "log_1",
-            targetDeviceName = "Pixel 9 Pro XL",
-            isIncoming = false,
-            trackCount = 4,
-            totalSizeMb = 124.5,
-            transferSpeedMbps = 52.4,
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 35,
-            status = TransferStatus.COMPLETED
-        ),
-        TransferLog(
-            id = "log_2",
-            targetDeviceName = "Galaxy S24 Ultra",
-            isIncoming = true,
-            trackCount = 2,
-            totalSizeMb = 17.0,
-            transferSpeedMbps = 46.8,
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 180,
-            status = TransferStatus.COMPLETED
-        ),
-        TransferLog(
-            id = "log_3",
-            targetDeviceName = "OnePlus 12",
-            isIncoming = false,
-            trackCount = 8,
-            totalSizeMb = 245.2,
-            transferSpeedMbps = 58.1,
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 24,
-            status = TransferStatus.COMPLETED
-        )
-    )
+    val sampleTransferLogs: List<TransferLog> = emptyList()
 
-    val sampleListeningHistory: List<ListeningHistoryEntry> = listOf(
-        ListeningHistoryEntry(
-            trackId = "track_1",
-            trackTitle = "Midnight Horizon",
-            artist = "Neon Eclipse",
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 12,
-            completedPercentage = 100,
-            wasSkipped = false
-        ),
-        ListeningHistoryEntry(
-            trackId = "track_7",
-            trackTitle = "Tokyo Rain Reflections",
-            artist = "Lo-Fi Odyssey",
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 45,
-            completedPercentage = 100,
-            wasSkipped = false
-        ),
-        ListeningHistoryEntry(
-            trackId = "track_2",
-            trackTitle = "Aether Resonance",
-            artist = "Sola & The Cosmos",
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 95,
-            completedPercentage = 85,
-            wasSkipped = false
-        ),
-        ListeningHistoryEntry(
-            trackId = "track_3",
-            trackTitle = "Quantum Pulse",
-            artist = "Vektor 9",
-            timestamp = System.currentTimeMillis() - 1000 * 60 * 150,
-            completedPercentage = 25,
-            wasSkipped = true
-        )
-    )
+    val sampleListeningHistory: List<ListeningHistoryEntry> = emptyList()
 
     val equalizerPresets = mapOf(
         "Aura Bass Pro" to listOf(4.5f, 6.0f, 3.5f, 1.0f, -1.0f, 0.5f, 2.0f, 4.0f, 5.5f, 6.5f),

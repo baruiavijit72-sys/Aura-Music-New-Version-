@@ -199,7 +199,7 @@ fun AudioTrimmerScreen(
         // Preview Selection Loop Button
         FilledTonalButton(
             onClick = {
-                viewModel.isTrimmingPlaying = !viewModel.isTrimmingPlaying
+                viewModel.toggleTrimmingPlayback()
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
@@ -277,6 +277,27 @@ fun AudioTrimmerScreen(
                         text = viewModel.trimExportSuccessMessage!!,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFF10B981)
+                    )
+                }
+            }
+        }
+
+        if (viewModel.trimExportErrorMessage != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF59E0B).copy(alpha = 0.2f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF59E0B))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = viewModel.trimExportErrorMessage!!,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color(0xFFF59E0B)
                     )
                 }
             }

@@ -56,12 +56,19 @@ fun LibraryScreen(
         }
 
         when (viewModel.sortBy) {
-            "title" -> list.sortedBy { it.title }
-            "artist" -> list.sortedBy { it.artist }
-            "duration" -> list.sortedByDescending { it.durationSeconds }
-            "size" -> list.sortedByDescending { it.fileSizeMb }
+            "title_asc" -> list.sortedBy { it.title.lowercase() }
+            "title_desc" -> list.sortedByDescending { it.title.lowercase() }
+            "artist_asc" -> list.sortedBy { it.artist.lowercase() }
+            "artist_desc" -> list.sortedByDescending { it.artist.lowercase() }
+            "album_asc" -> list.sortedBy { it.album.lowercase() }
+            "duration_desc" -> list.sortedByDescending { it.durationSeconds }
+            "duration_asc" -> list.sortedBy { it.durationSeconds }
+            "size_desc" -> list.sortedByDescending { it.fileSizeMb }
+            "size_asc" -> list.sortedBy { it.fileSizeMb }
             "playCount" -> list.sortedByDescending { it.playCount }
-            else -> list
+            "year_desc" -> list.sortedByDescending { it.year }
+            "year_asc" -> list.sortedBy { it.year }
+            else -> list.sortedBy { it.title.lowercase() }
         }
     }
 
@@ -209,6 +216,22 @@ fun LibraryScreen(
 
                 // Sort Dropdown
                 Box {
+                    val sortDisplayName = when (viewModel.sortBy) {
+                        "title_asc" -> "Title (A-Z)"
+                        "title_desc" -> "Title (Z-A)"
+                        "artist_asc" -> "Artist (A-Z)"
+                        "artist_desc" -> "Artist (Z-A)"
+                        "album_asc" -> "Album (A-Z)"
+                        "duration_desc" -> "Duration (Longest)"
+                        "duration_asc" -> "Duration (Shortest)"
+                        "size_desc" -> "Size (Lossless First)"
+                        "size_asc" -> "Size (Smallest First)"
+                        "playCount" -> "Most Played Count"
+                        "year_desc" -> "Year (Newest)"
+                        "year_asc" -> "Year (Oldest)"
+                        else -> "Title (A-Z)"
+                    }
+
                     TextButton(onClick = { isSortMenuExpanded = true }) {
                         Icon(
                             imageVector = Icons.Default.Sort,
@@ -218,7 +241,7 @@ fun LibraryScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Sort: ${viewModel.sortBy.replaceFirstChar { it.uppercase() }}",
+                            text = sortDisplayName,
                             style = MaterialTheme.typography.labelMedium,
                             color = AuraPrimary
                         )
@@ -229,30 +252,65 @@ fun LibraryScreen(
                         onDismissRequest = { isSortMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Title (A-Z)") },
+                            text = { Text("Title (A → Z)") },
                             onClick = {
-                                viewModel.sortBy = "title"
+                                viewModel.sortBy = "title_asc"
                                 isSortMenuExpanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Artist Name") },
+                            text = { Text("Title (Z → A)") },
                             onClick = {
-                                viewModel.sortBy = "artist"
+                                viewModel.sortBy = "title_desc"
                                 isSortMenuExpanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Duration (Longest)") },
+                            text = { Text("Artist Name (A → Z)") },
                             onClick = {
-                                viewModel.sortBy = "duration"
+                                viewModel.sortBy = "artist_asc"
                                 isSortMenuExpanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("File Size (Lossless)") },
+                            text = { Text("Artist Name (Z → A)") },
                             onClick = {
-                                viewModel.sortBy = "size"
+                                viewModel.sortBy = "artist_desc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Album Name (A → Z)") },
+                            onClick = {
+                                viewModel.sortBy = "album_asc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Duration (Longest First)") },
+                            onClick = {
+                                viewModel.sortBy = "duration_desc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Duration (Shortest First)") },
+                            onClick = {
+                                viewModel.sortBy = "duration_asc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("File Size (Lossless / Largest)") },
+                            onClick = {
+                                viewModel.sortBy = "size_desc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("File Size (Smallest)") },
+                            onClick = {
+                                viewModel.sortBy = "size_asc"
                                 isSortMenuExpanded = false
                             }
                         )
@@ -260,6 +318,20 @@ fun LibraryScreen(
                             text = { Text("Most Played Count") },
                             onClick = {
                                 viewModel.sortBy = "playCount"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Release Year (Newest First)") },
+                            onClick = {
+                                viewModel.sortBy = "year_desc"
+                                isSortMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Release Year (Oldest First)") },
+                            onClick = {
+                                viewModel.sortBy = "year_asc"
                                 isSortMenuExpanded = false
                             }
                         )

@@ -4,14 +4,20 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.PlaybackParams
+import android.media.audiofx.BassBoost
+import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
+import android.media.audiofx.Virtualizer
 import android.net.Uri
 import android.os.Build
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.AuraDatabaseHelper
 import com.example.data.MediaStoreAudioScanner
 import com.example.data.MusicRepository
 import com.example.model.*
+import com.example.utils.AudioExportHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -45,7 +51,7 @@ class AuraViewModel : ViewModel() {
     var isScanningDeviceStorage by mutableStateOf(false)
         private set
 
-    fun scanDeviceStorage(context: android.content.Context) {
+    fun scanDeviceStorage(context: Context) {
         viewModelScope.launch {
             isScanningDeviceStorage = true
             val scanned = MediaStoreAudioScanner.scanDeviceAudioFiles(context)
@@ -115,7 +121,7 @@ class AuraViewModel : ViewModel() {
     var p2pSelectedTrackIds by mutableStateOf<Set<String>>(emptySet())
         private set
 
-    var transferLogs by mutableStateOf(MusicRepository.sampleTransferLogs)
+    var transferLogs by mutableStateOf<List<TransferLog>>(emptyList())
         private set
 
     var qrCodePairingPin by mutableStateOf("AURA-7492")
@@ -132,7 +138,7 @@ class AuraViewModel : ViewModel() {
     var searchQuery by mutableStateOf("")
     var selectedSourceFilter by mutableStateOf<TrackSource?>(null)
     var selectedCategoryTab by mutableIntStateOf(0) // 0: Tracks, 1: Albums, 2: Artists, 3: Genres, 4: Folders
-    var sortBy by mutableStateOf("title") // title, artist, duration, size, playCount
+    var sortBy by mutableStateOf("title") // title_asc, title_desc, artist_asc, artist_desc, album, duration_desc, duration_asc, size_desc, size_asc, playCount, year
     var filterShortAudio by mutableStateOf(true) // Filter < 30 seconds
     var blacklistedFolders by mutableStateOf<List<String>>(listOf("/storage/emulated/0/WhatsApp/Media/VoiceNotes", "/storage/emulated/0/Notifications"))
 
@@ -145,6 +151,7 @@ class AuraViewModel : ViewModel() {
     var trimEndSeconds by mutableFloatStateOf(45f)
     var isTrimmingPlaying by mutableStateOf(false)
     var trimExportSuccessMessage by mutableStateOf<String?>(null)
+    var trimExportErrorMessage by mutableStateOf<String?>(null)
 
     // Sleep Timer
     var sleepTimerMinutesRemaining by mutableIntStateOf(0)
@@ -162,17 +169,45 @@ class AuraViewModel : ViewModel() {
     var headphoneAutoPause by mutableStateOf(true)
     var volumeBalance by mutableFloatStateOf(0f)
 
-    // Listening Analytics
-    var listeningHistory by mutableStateOf(MusicRepository.sampleListeningHistory)
+    // Listening Analytics & Database
+    var listeningHistory by mutableStateOf<List<ListeningHistoryEntry>>(emptyList())
+        private set
+    var totalListeningSeconds by mutableDoubleStateOf(0.0)
         private set
 
     private var applicationContext: Context? = null
+    private var dbHelper: AuraDatabaseHelper? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var equalizerEffect: Equalizer? = null
+    private var bassBoostEffect: BassBoost? = null
+    private var virtualizerEffect: Virtualizer? = null
+    private var loudnessEnhancerEffect: LoudnessEnhancer? = null
+
     private var playbackJob: Job? = null
     private var visualizerJob: Job? = null
+    private var trimmerLoopJob: Job? = null
 
     fun setAppContext(ctx: Context) {
-        applicationContext = ctx.applicationContext
+        val appCtx = ctx.applicationContext
+        applicationContext = appCtx
+        dbHelper = AuraDatabaseHelper(appCtx)
+        loadDataFromDatabase()
+    }
+
+    private fun loadDataFromDatabase() {
+        val helper = dbHelper ?: return
+        viewModelScope.launch {
+            try {
+                val logs = helper.getAllTransferLogs()
+                transferLogs = logs
+                val history = helper.getAllListeningHistory(100)
+                listeningHistory = history
+                val secs = helper.getListeningSeconds()
+                totalListeningSeconds = secs
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     init {
@@ -181,12 +216,103 @@ class AuraViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
+        releaseAudioEffects()
         try {
             mediaPlayer?.release()
             mediaPlayer = null
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun releaseAudioEffects() {
+        try {
+            equalizerEffect?.release()
+            equalizerEffect = null
+            bassBoostEffect?.release()
+            bassBoostEffect = null
+            virtualizerEffect?.release()
+            virtualizerEffect = null
+            loudnessEnhancerEffect?.release()
+            loudnessEnhancerEffect = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun setupAudioEffects(audioSessionId: Int) {
+        if (audioSessionId == 0) return
+        releaseAudioEffects()
+        try {
+            equalizerEffect = Equalizer(0, audioSessionId).apply {
+                enabled = soundSettings.isEnabled
+            }
+            bassBoostEffect = BassBoost(0, audioSessionId).apply {
+                enabled = soundSettings.isEnabled
+                setStrength((soundSettings.bassBoost * 1000).toInt().toShort())
+            }
+            virtualizerEffect = Virtualizer(0, audioSessionId).apply {
+                enabled = soundSettings.isEnabled
+                setStrength((soundSettings.virtualizer3D * 1000).toInt().toShort())
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                loudnessEnhancerEffect = LoudnessEnhancer(audioSessionId).apply {
+                    enabled = soundSettings.isEnabled
+                    setTargetGain((soundSettings.volumeBoost * 800).toInt())
+                }
+            }
+            applyEqualizerSettingsToEffects()
+        } catch (e: Exception) {
+            android.util.Log.w("AuraAudioFx", "Failed to init native audio effects: ${e.message}")
+        }
+    }
+
+    private fun applyEqualizerSettingsToEffects() {
+        val eq = equalizerEffect ?: return
+        try {
+            eq.enabled = soundSettings.isEnabled
+            val numBands = eq.numberOfBands.toInt()
+            val minDb = eq.bandLevelRange[0]
+            val maxDb = eq.bandLevelRange[1]
+
+            soundSettings.bands.take(numBands).forEachIndexed { index, band ->
+                val targetMilliDb = (band.gainDb * 100).toInt().coerceIn(minDb.toInt(), maxDb.toInt()).toShort()
+                eq.setBandLevel(index.toShort(), targetMilliDb)
+            }
+
+            bassBoostEffect?.apply {
+                enabled = soundSettings.isEnabled
+                setStrength((soundSettings.bassBoost * 1000).toInt().coerceIn(0, 1000).toShort())
+            }
+            virtualizerEffect?.apply {
+                enabled = soundSettings.isEnabled
+                setStrength((soundSettings.virtualizer3D * 1000).toInt().coerceIn(0, 1000).toShort())
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                loudnessEnhancerEffect?.apply {
+                    enabled = soundSettings.isEnabled
+                    setTargetGain((soundSettings.volumeBoost * 800).toInt())
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("AuraAudioFx", "applyEqualizerSettingsToEffects exception: ${e.message}")
+        }
+    }
+
+    private fun updateStereoBalance() {
+        val mp = mediaPlayer ?: return
+        try {
+            val left = if (volumeBalance > 0f) 1.0f - volumeBalance else 1.0f
+            val right = if (volumeBalance < 0f) 1.0f + volumeBalance else 1.0f
+            mp.setVolume(left.coerceIn(0f, 1f), right.coerceIn(0f, 1f))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun updateVolumeBalance(value: Float) {
+        volumeBalance = value.coerceIn(-1f, 1f)
+        updateStereoBalance()
     }
 
     fun navigateTo(screen: AppScreen) {
@@ -209,7 +335,7 @@ class AuraViewModel : ViewModel() {
 
     private fun playCurrentTrackWithMediaPlayer() {
         val ctx = applicationContext ?: return
-        val track技巧 = currentTrack ?: return
+        val track = currentTrack ?: return
 
         try {
             try {
@@ -232,7 +358,7 @@ class AuraViewModel : ViewModel() {
             }
 
             var dataSourceSet = false
-            val uriString = track技巧.contentUriString
+            val uriString = track.contentUriString
 
             // Method 1: ContentResolver AssetFileDescriptor
             if (!uriString.isNullOrEmpty()) {
@@ -250,8 +376,8 @@ class AuraViewModel : ViewModel() {
             // Method 2: ContentResolver FileDescriptor
             if (!dataSourceSet && !uriString.isNullOrEmpty()) {
                 try {
-                    val parsedUri技巧 = Uri.parse(uriString)
-                    ctx.contentResolver.openFileDescriptor(parsedUri技巧, "r")?.use { pfd ->
+                    val parsedUri = Uri.parse(uriString)
+                    ctx.contentResolver.openFileDescriptor(parsedUri, "r")?.use { pfd ->
                         newPlayer.setDataSource(pfd.fileDescriptor)
                         dataSourceSet = true
                     }
@@ -271,11 +397,11 @@ class AuraViewModel : ViewModel() {
             }
 
             // Method 4: File Path
-            if (!dataSourceSet && track技巧.filePath.isNotEmpty()) {
+            if (!dataSourceSet && track.filePath.isNotEmpty()) {
                 try {
-                    val f = File(track技巧.filePath)
+                    val f = File(track.filePath)
                     if (f.exists() && f.canRead()) {
-                        newPlayer.setDataSource(track技巧.filePath)
+                        newPlayer.setDataSource(track.filePath)
                         dataSourceSet = true
                     }
                 } catch (e: Exception) {
@@ -284,19 +410,22 @@ class AuraViewModel : ViewModel() {
             }
 
             if (!dataSourceSet) {
-                android.util.Log.e("AuraPlayer", "Could not set data source for track: ${track技巧.title}")
+                android.util.Log.e("AuraPlayer", "Could not set data source for track: ${track.title}")
                 return
             }
 
             newPlayer.setOnPreparedListener { mp ->
                 try {
-                    mp.setVolume(1.0f, 1.0f)
+                    val left = if (volumeBalance > 0f) 1.0f - volumeBalance else 1.0f
+                    val right = if (volumeBalance < 0f) 1.0f + volumeBalance else 1.0f
+                    mp.setVolume(left.coerceIn(0f, 1f), right.coerceIn(0f, 1f))
                     if (playbackPositionSeconds > 0f) {
                         mp.seekTo((playbackPositionSeconds * 1000).toInt())
                     }
                     if (isPlaying) {
                         mp.start()
                     }
+                    setupAudioEffects(mp.audioSessionId)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && (playbackSpeed != 1.0f || playbackPitch != 1.0f)) {
                         try {
                             mp.playbackParams = mp.playbackParams.setSpeed(playbackSpeed).setPitch(playbackPitch)
@@ -452,23 +581,26 @@ class AuraViewModel : ViewModel() {
         }
     }
 
-    fun setSpeed(speed: Float) {
+    fun updatePlaybackSpeed(speed: Float) {
         playbackSpeed = speed
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setSpeed(speed) ?: PlaybackParams().setSpeed(speed)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
-    fun setPitch(pitch: Float) {
+    fun updatePlaybackPitch(pitch: Float) {
         playbackPitch = pitch
-    }
-
-    fun playNext(track: Track) {
-        val mutable = playQueue.toMutableList()
-        val insertIndex = (currentTrackIndex + 1).coerceAtMost(mutable.size)
-        mutable.add(insertIndex, track)
-        playQueue = mutable
-    }
-
-    fun addToQueue(track: Track) {
-        playQueue = playQueue + track
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setPitch(pitch) ?: PlaybackParams().setPitch(pitch)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun reorderQueue(fromIndex: Int, toIndex: Int) {
@@ -483,20 +615,9 @@ class AuraViewModel : ViewModel() {
         }
     }
 
-    fun removeQueueItem(index: Int) {
-        if (index in playQueue.indices) {
-            val mutable = playQueue.toMutableList()
-            mutable.removeAt(index)
-            playQueue = mutable
-            if (currentTrackIndex >= mutable.size) {
-                currentTrackIndex = (mutable.size - 1).coerceAtLeast(0)
-            }
-        }
-    }
-
     fun clearQueue() {
-        currentTrack?.let { current ->
-            playQueue = listOf(current)
+        currentTrack?.let {
+            playQueue = listOf(it)
             currentTrackIndex = 0
         }
     }
@@ -505,8 +626,9 @@ class AuraViewModel : ViewModel() {
     fun updateEqualizerBand(index: Int, gainDb: Float) {
         val currentBands = soundSettings.bands.toMutableList()
         if (index in currentBands.indices) {
-            currentBands[index] = currentBands[index].copy(gainDb = gainDb)
+            currentBands[index] = currentBands[index].copy(gainDb = gainDb.coerceIn(-12f, 12f))
             soundSettings = soundSettings.copy(bands = currentBands, currentPreset = "Custom Preset")
+            applyEqualizerSettingsToEffects()
         }
     }
 
@@ -516,22 +638,27 @@ class AuraViewModel : ViewModel() {
             band.copy(gainDb = gains.getOrElse(idx) { 0f })
         }
         soundSettings = soundSettings.copy(bands = newBands, currentPreset = presetName)
+        applyEqualizerSettingsToEffects()
     }
 
     fun updateBassBoost(value: Float) {
         soundSettings = soundSettings.copy(bassBoost = value.coerceIn(0f, 1f))
+        applyEqualizerSettingsToEffects()
     }
 
     fun updateVirtualizer(value: Float) {
         soundSettings = soundSettings.copy(virtualizer3D = value.coerceIn(0f, 1f))
+        applyEqualizerSettingsToEffects()
     }
 
     fun updateTrebleBoost(value: Float) {
         soundSettings = soundSettings.copy(trebleBoost = value.coerceIn(0f, 1f))
+        applyEqualizerSettingsToEffects()
     }
 
     fun updateVolumeBoost(value: Float) {
         soundSettings = soundSettings.copy(volumeBoost = value.coerceIn(0f, 1f))
+        applyEqualizerSettingsToEffects()
     }
 
     fun updateCrossfade(seconds: Int) {
@@ -540,6 +667,7 @@ class AuraViewModel : ViewModel() {
 
     fun toggleEqualizer(enabled: Boolean) {
         soundSettings = soundSettings.copy(isEnabled = enabled)
+        applyEqualizerSettingsToEffects()
     }
 
     // P2P Sharing
@@ -567,6 +695,11 @@ class AuraViewModel : ViewModel() {
         }
     }
 
+    fun recordTransferLog(log: TransferLog) {
+        transferLogs = listOf(log) + transferLogs
+        dbHelper?.insertTransferLog(log)
+    }
+
     fun simulateP2PTransfer(targetDevice: P2PDevice) {
         if (p2pSelectedTrackIds.isEmpty()) return
         isP2PTransferring = true
@@ -575,7 +708,7 @@ class AuraViewModel : ViewModel() {
         viewModelScope.launch {
             val count = p2pSelectedTrackIds.size
             val sizeMb = allTracks.filter { it.id in p2pSelectedTrackIds }.sumOf { it.fileSizeMb }
-            
+
             while (p2pTransferProgress < 1.0f) {
                 delay(120)
                 p2pTransferProgress += 0.05f
@@ -583,8 +716,8 @@ class AuraViewModel : ViewModel() {
             }
             p2pTransferProgress = 1.0f
             isP2PTransferring = false
-            
-            // Add to transfer logs
+
+            // Add to persistent transfer logs
             val newLog = TransferLog(
                 id = UUID.randomUUID().toString(),
                 targetDeviceName = targetDevice.name,
@@ -594,7 +727,7 @@ class AuraViewModel : ViewModel() {
                 transferSpeedMbps = p2pTransferSpeedMbps.toDouble(),
                 status = TransferStatus.COMPLETED
             )
-            transferLogs = listOf(newLog) + transferLogs
+            recordTransferLog(newLog)
             p2pSelectedTrackIds = emptySet()
         }
     }
@@ -606,16 +739,80 @@ class AuraViewModel : ViewModel() {
         trimEndSeconds = (track.durationSeconds.toFloat() * 0.4f).coerceAtLeast(30f)
         isTrimmingPlaying = false
         trimExportSuccessMessage = null
+        trimExportErrorMessage = null
         navigateTo(AppScreen.AUDIO_TRIMMER)
     }
 
-    fun exportTrimmedAudio(type: String) {
+    fun toggleTrimmingPlayback() {
+        isTrimmingPlaying = !isTrimmingPlaying
+        if (isTrimmingPlaying) {
+            startTrimmerLoop()
+        } else {
+            trimmerLoopJob?.cancel()
+            mediaPlayer?.pause()
+        }
+    }
+
+    private fun startTrimmerLoop() {
+        trimmerLoopJob?.cancel()
+        val track = trimmingTrack ?: currentTrack ?: return
+        seekTo(trimStartSeconds)
+        if (!isPlaying) {
+            togglePlayPause()
+        }
+
+        trimmerLoopJob = viewModelScope.launch {
+            while (isActive && isTrimmingPlaying) {
+                delay(200)
+                if (playbackPositionSeconds >= trimEndSeconds) {
+                    seekTo(trimStartSeconds)
+                }
+            }
+        }
+    }
+
+    fun exportTrimmedAudio(typeLabel: String) {
+        val ctx = applicationContext ?: return
+        val track = trimmingTrack ?: currentTrack ?: return
+
+        val toneType = when {
+            typeLabel.contains("Ringtone", ignoreCase = true) -> AudioExportHelper.ToneType.RINGTONE
+            typeLabel.contains("Notification", ignoreCase = true) -> AudioExportHelper.ToneType.NOTIFICATION
+            else -> AudioExportHelper.ToneType.ALARM
+        }
+
         viewModelScope.launch {
-            trimExportSuccessMessage = "Saving high-definition audio clip..."
-            delay(1000)
-            trimExportSuccessMessage = "Successfully set as Phone $type!"
-            delay(3000)
-            trimExportSuccessMessage = null
+            trimExportSuccessMessage = "Configuring system $typeLabel..."
+            trimExportErrorMessage = null
+
+            val result = AudioExportHelper.exportAndSetSystemTone(
+                context = ctx,
+                track = track,
+                toneType = toneType,
+                startSec = trimStartSeconds,
+                endSec = trimEndSeconds
+            )
+
+            when (result) {
+                is AudioExportHelper.ExportResult.Success -> {
+                    trimExportSuccessMessage = result.message
+                    delay(4000)
+                    trimExportSuccessMessage = null
+                }
+                is AudioExportHelper.ExportResult.PermissionRequired -> {
+                    trimExportSuccessMessage = null
+                    trimExportErrorMessage = result.message
+                    try {
+                        ctx.startActivity(result.intent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                is AudioExportHelper.ExportResult.Error -> {
+                    trimExportSuccessMessage = null
+                    trimExportErrorMessage = result.errorMessage
+                }
+            }
         }
     }
 
@@ -715,11 +912,14 @@ class AuraViewModel : ViewModel() {
             completedPercentage = 100,
             wasSkipped = false
         )
-        listeningHistory = listOf(entry) + listeningHistory.take(49)
+        listeningHistory = listOf(entry) + listeningHistory.take(99)
+        dbHelper?.insertListeningHistory(entry)
+        dbHelper?.incrementListeningSeconds(track.durationSeconds.toDouble())
+        totalListeningSeconds += track.durationSeconds
     }
 
     // Real System Share Intent for Quick Share / Nearby Share / Files by Google
-    fun shareTracksViaSystemIntent(context: android.content.Context) {
+    fun shareTracksViaSystemIntent(context: Context) {
         val selectedTracks = allTracks.filter { it.id in p2pSelectedTrackIds }
         if (selectedTracks.isEmpty()) return
 
@@ -739,9 +939,23 @@ class AuraViewModel : ViewModel() {
         }
 
         try {
+            val count = selectedTracks.size
+            val sizeMb = selectedTracks.sumOf { it.fileSizeMb }
             val chooser = android.content.Intent.createChooser(shareIntent, "Share via Quick Share / Nearby Share / Files")
             chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
+
+            // Log real transfer record into SQLite database
+            val log = TransferLog(
+                id = UUID.randomUUID().toString(),
+                targetDeviceName = "System Quick Share / Files",
+                isIncoming = false,
+                trackCount = count,
+                totalSizeMb = sizeMb,
+                transferSpeedMbps = 54.0,
+                status = TransferStatus.COMPLETED
+            )
+            recordTransferLog(log)
         } catch (e: Exception) {
             e.printStackTrace()
         }
