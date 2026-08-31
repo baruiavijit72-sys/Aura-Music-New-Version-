@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
             var isSplashVisible by remember { mutableStateOf(true) }
             var isAuthenticated by remember { mutableStateOf(false) }
 
-            // Permission Launcher for auto-scanning local songs
+            // Permission Launcher for auto-scanning local songs and notification permission
             val permissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestMultiplePermissions()
             ) { permissions ->
@@ -74,27 +74,25 @@ class MainActivity : ComponentActivity() {
 
             // Function to trigger permission check
             val triggerStoragePermissionCheck = {
-                val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.READ_MEDIA_AUDIO
-                    ) == PackageManager.PERMISSION_GRANTED
+                val permissionsToRequest = mutableListOf<String>()
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        permissionsToRequest.add(Manifest.permission.READ_MEDIA_AUDIO)
+                    }
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
                 } else {
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    ) == PackageManager.PERMISSION_GRANTED
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    }
                 }
 
-                if (hasPermission) {
+                if (permissionsToRequest.isEmpty()) {
                     auraViewModel.scanDeviceStorage(context)
                 } else {
-                    val permissionsToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
-                    } else {
-                        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-                    }
-                    permissionLauncher.launch(permissionsToRequest)
+                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
                 }
             }
 

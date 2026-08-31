@@ -17,6 +17,7 @@ import com.example.data.AuraDatabaseHelper
 import com.example.data.MediaStoreAudioScanner
 import com.example.data.MusicRepository
 import com.example.model.*
+import com.example.service.AuraPlaybackService
 import com.example.utils.AudioExportHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -43,6 +44,10 @@ enum class AppScreen(val title: String) {
 }
 
 class AuraViewModel : ViewModel() {
+
+    companion object {
+        var activeInstance: AuraViewModel? = null
+    }
 
     // Tracks & Library Data
     var allTracks by mutableStateOf<List<Track>>(MusicRepository.sampleTracks)
@@ -211,6 +216,7 @@ class AuraViewModel : ViewModel() {
     }
 
     init {
+        activeInstance = this
         startVisualizerLoop()
     }
 
@@ -455,6 +461,17 @@ class AuraViewModel : ViewModel() {
     }
 
     // Playback Controls
+    private fun syncWithPlaybackService() {
+        val ctx = applicationContext ?: return
+        val track = currentTrack ?: return
+        AuraPlaybackService.updateService(
+            ctx,
+            track.title,
+            track.artist,
+            isPlaying
+        )
+    }
+
     fun playTrack(track: Track) {
         val indexInQueue = playQueue.indexOfFirst { it.id == track.id }
         if (indexInQueue >= 0) {
@@ -468,9 +485,10 @@ class AuraViewModel : ViewModel() {
         playCurrentTrackWithMediaPlayer()
         startPlaybackProgress()
         recordListeningHistory(track)
+        syncWithPlaybackService()
     }
 
-    fun togglePlayPause() {
+    fun pausePlayback() {
         if (isPlaying) {
             isPlaying = false
             try {
@@ -479,7 +497,12 @@ class AuraViewModel : ViewModel() {
                 e.printStackTrace()
             }
             playbackJob?.cancel()
-        } else {
+            syncWithPlaybackService()
+        }
+    }
+
+    fun resumePlayback() {
+        if (!isPlaying) {
             isPlaying = true
             if (mediaPlayer != null) {
                 try {
@@ -491,6 +514,15 @@ class AuraViewModel : ViewModel() {
                 playCurrentTrackWithMediaPlayer()
             }
             startPlaybackProgress()
+            syncWithPlaybackService()
+        }
+    }
+
+    fun togglePlayPause() {
+        if (isPlaying) {
+            pausePlayback()
+        } else {
+            resumePlayback()
         }
     }
 
@@ -517,6 +549,7 @@ class AuraViewModel : ViewModel() {
         playCurrentTrackWithMediaPlayer()
         startPlaybackProgress()
         currentTrack?.let { recordListeningHistory(it) }
+        syncWithPlaybackService()
     }
 
     fun skipToPrevious() {
@@ -535,6 +568,7 @@ class AuraViewModel : ViewModel() {
         isPlaying = true
         playCurrentTrackWithMediaPlayer()
         startPlaybackProgress()
+        syncWithPlaybackService()
     }
 
     fun seekTo(seconds: Float) {
