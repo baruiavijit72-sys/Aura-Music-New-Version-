@@ -27,7 +27,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK with Gradle
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        env:
+          GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -Dkotlin.compiler.execution.strategy=in-process"
+        run: ./gradlew assembleDebug --stacktrace --info --no-daemon -Dkotlin.compiler.execution.strategy=in-process
 
       - name: Prepare APK Artifacts
         if: always()
