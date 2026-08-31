@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff" />
+      <stop offset="50%" stop-color="#8a2be2" />
+      <stop offset="100%" stop-color="#ff007f" />
+    </linearGradient>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e0b36" />
+      <stop offset="100%" stop-color="#06030e" />
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGlow)" />
+  <circle cx="256" cy="256" r="160" stroke="#00e5ff" stroke-width="6" stroke-dasharray="12 16" opacity="0.4" fill="none" />
+  <circle cx="256" cy="256" r="120" stroke="#ff007f" stroke-width="4" stroke-dasharray="8 12" opacity="0.3" fill="none" />
+  <path d="M256 80 C230 160 210 220 210 290 C210 370 280 410 320 360 C350 320 330 260 275 260 C220 260 190 320 190 380 C190 460 260 500 310 480" stroke="url(#auraGrad)" stroke-width="26" stroke-linecap="round" fill="none" />
+  <circle cx="256" cy="80" r="14" fill="#ffffff" />
+  <circle cx="220" cy="420" r="18" fill="#00e5ff" />
+</svg>

@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User account and cloud sync preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "authProvider": { "type": "string" },
+        "lastCloudBackup": { "type": "number" },
+        "totalListeningSeconds": { "type": "number" }
+      },
+      "required": ["userId", "email"]
+    },
+    "UserBackup": {
+      "title": "User Cloud Backup",
+      "description": "Full snapshot of user playlists, favorites, and equalizer configurations",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dataJson": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "dataJson", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/backups/{backupId}": {
+      "schema": "UserBackup",
+      "description": "User snapshot backups"
+    }
+  }
+}

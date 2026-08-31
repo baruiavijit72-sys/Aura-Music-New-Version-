@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and sync metadata",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "authProvider": { "type": "string" },
+        "lastCloudBackup": { "type": "number" },
+        "totalListeningSeconds": { "type": "number" },
+        "lastLoginAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId"]
+    },
+    "UserBackup": {
+      "title": "UserBackup",
+      "description": "Full cloud backup JSON payload for library, playlists, and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dataJson": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "dataJson", "updatedAt"]
+    },
+    "TransferRoom": {
+      "title": "TransferRoom",
+      "description": "Live P2P music transfer room with PIN and session status",
+      "type": "object",
+      "properties": {
+        "pinCode": { "type": "string" },
+        "roomId": { "type": "string" },
+        "senderDeviceName": { "type": "string" },
+        "receiverDeviceName": { "type": "string" },
+        "shareUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "completedAt": { "type": "number" }
+      },
+      "required": ["pinCode", "roomId", "status", "createdAt"]
+    },
+    "ActiveMeshPeer": {
+      "title": "ActiveMeshPeer",
+      "description": "Real-time discovery beacon for nearby active P2P transfer devices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "protocol": { "type": "string" },
+        "signalStrength": { "type": "number" },
+        "ipAddress": { "type": "string" },
+        "isAvailable": { "type": "boolean" },
+        "avatarColor": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "name", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Individual user accounts and profile sync"
+    },
+    "/users/{userId}/backups/{backupId}": {
+      "schema": "UserBackup",
+      "description": "Cloud backups for playlists and settings"
+    },
+    "/transfer_rooms/{pinCode}": {
+      "schema": "TransferRoom",
+      "description": "Temporary peer-to-peer room state"
+    },
+    "/active_mesh_peers/{peerId}": {
+      "schema": "ActiveMeshPeer",
+      "description": "Live discovery beacons for wireless mesh transfer"
+    }
+  }
+}

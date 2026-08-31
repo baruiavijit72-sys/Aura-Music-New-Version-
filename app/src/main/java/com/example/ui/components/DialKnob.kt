@@ -1,0 +1,121 @@
+package com.example.ui.components
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.AuraPrimary
+import com.example.ui.theme.AuraSecondary
+import kotlin.math.*
+
+@Composable
+fun DialKnob(
+    value: Float, // 0f to 1f
+    onValueChange: (Float) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    activeColor: Color = AuraPrimary,
+    glowColor: Color = AuraSecondary
+) {
+    val startAngle = 135f
+    val sweepAngle = 270f
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        val delta = -dragAmount.y * 0.008f
+                        val newValue = (value + delta).coerceIn(0f, 1f)
+                        onValueChange(newValue)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize().padding(6.dp)) {
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val radius = (size.minDimension / 2f) - 6.dp.toPx()
+
+                // Background track arc
+                drawArc(
+                    color = Color.DarkGray.copy(alpha = 0.4f),
+                    startAngle = startAngle,
+                    sweepAngle = sweepAngle,
+                    useCenter = false,
+                    topLeft = Offset(center.x - radius, center.y - radius),
+                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                    style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                // Active value arc
+                val activeSweep = sweepAngle * value
+                drawArc(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(activeColor, glowColor, activeColor)
+                    ),
+                    startAngle = startAngle,
+                    sweepAngle = activeSweep,
+                    useCenter = false,
+                    topLeft = Offset(center.x - radius, center.y - radius),
+                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                    style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                // Center knob cap
+                drawCircle(
+                    color = Color(0xFF1E202C),
+                    radius = radius * 0.72f,
+                    center = center
+                )
+
+                // Indicator needle dot
+                val currentAngleRad = Math.toRadians((startAngle + activeSweep).toDouble())
+                val needleRadius = radius * 0.52f
+                val needleX = center.x + (needleRadius * cos(currentAngleRad)).toFloat()
+                val needleY = center.y + (needleRadius * sin(currentAngleRad)).toFloat()
+
+                drawCircle(
+                    color = Color.White,
+                    radius = 3.5.dp.toPx(),
+                    center = Offset(needleX, needleY)
+                )
+            }
+
+            // Percentage readout
+            Text(
+                text = "${(value * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
