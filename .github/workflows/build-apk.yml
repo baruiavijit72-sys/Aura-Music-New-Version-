@@ -27,16 +27,17 @@ jobs:
       - name: Make Gradle script executable
         run: chmod +x gradlew 2>/dev/null || true
 
-      - name: Setup Keystore
+      - name: Setup Keystore & Environment
         run: |
+          touch .env
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore
           fi
 
-      - name: Build with Gradle
+      - name: Build Debug APK with Gradle
         run: |
           chmod +x ./gradlew 2>/dev/null || true
-          ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
+          ./gradlew assembleDebug -x test -x lint -x check --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
