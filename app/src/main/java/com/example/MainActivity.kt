@@ -154,7 +154,7 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
     )
 
     LaunchedEffect(Unit) {
-        delay(2500)
+        delay(1800)
         onSplashComplete()
     }
 
@@ -165,8 +165,8 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                 Brush.radialGradient(
                     colors = listOf(
                         Color(0xFF0F172A),
-                        Color(0xFF030712),
-                        Color(0xFF000000)
+                        Color(0xFF070B14),
+                        Color(0xFF030712)
                     )
                 )
             ),
@@ -182,25 +182,26 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                     .scale(pulseScale),
                 contentAlignment = Alignment.Center
             ) {
-                // Golden stardust glow backdrop
+                // Multi-color neon aura halo
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(124.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.sweepGradient(
                                 listOf(
-                                    Color(0xFFFFD700),
-                                    Color(0xFF6366F1),
                                     Color(0xFF06B6D4),
-                                    Color(0xFFFFD700)
+                                    Color(0xFF6366F1),
+                                    Color(0xFFEC4899),
+                                    Color(0xFFFFD700),
+                                    Color(0xFF06B6D4)
                                 )
                             )
                         )
                 )
                 Box(
                     modifier = Modifier
-                        .size(108.dp)
+                        .size(112.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF090D16)),
                     contentAlignment = Alignment.Center
@@ -208,28 +209,28 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.GraphicEq,
                         contentDescription = "Aura Music",
-                        tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(54.dp)
+                        tint = Color(0xFF38BDF8),
+                        modifier = Modifier.size(56.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
                 text = "AURA MUSIC",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 4.sp
+                    letterSpacing = 6.sp
                 ),
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Lossless Audio • Spatial Sound • Zero-Data P2P",
-                style = MaterialTheme.typography.bodySmall,
+                text = "Lossless Sound • Hi-Res Acoustic Engine",
+                style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 1.sp),
                 color = Color(0xFFA1A1AA)
             )
 
@@ -237,20 +238,10 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
 
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
-                color = Color(0xFFFFD700),
+                color = Color(0xFF06B6D4),
                 strokeWidth = 2.5.dp
             )
         }
-
-        Text(
-            text = "Tap to Skip",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp)
-                .clickable { onSplashComplete() }
-        )
     }
 }
 

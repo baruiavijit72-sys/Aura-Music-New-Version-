@@ -315,42 +315,41 @@ fun P2PSharingScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 Text(
-                                    text = "Or Send Directly via Wi-Fi Direct Peer:",
+                                    text = "Direct Wi-Fi / Hotspot Transfer:",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = AuraPrimary
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                viewModel.nearbyDevices.forEach { dev ->
-                                    Surface(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                viewModel.simulateP2PTransfer(dev)
-                                            },
-                                        color = MaterialTheme.colorScheme.surface
-                                    ) {
+                                
+                                val myDeviceName = "${android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${android.os.Build.MODEL}"
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surface
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
                                         Row(
-                                            modifier = Modifier.padding(10.dp),
+                                            modifier = Modifier.fillMaxWidth(),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(
-                                                    imageVector = Icons.Default.PhoneAndroid,
+                                                    imageVector = Icons.Default.WifiTethering,
                                                     contentDescription = null,
-                                                    tint = AuraPrimary,
+                                                    tint = AuraSecondary,
                                                     modifier = Modifier.size(22.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Column {
                                                     Text(
-                                                        text = dev.name,
+                                                        text = myDeviceName,
                                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                                     )
                                                     Text(
-                                                        text = "${dev.connectionType} • Signal: ${dev.signalStrength}%",
+                                                        text = "Aura Local Network Ready • Zero Data",
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
@@ -358,11 +357,12 @@ fun P2PSharingScreen(
                                             }
 
                                             Button(
-                                                onClick = { viewModel.simulateP2PTransfer(dev) },
+                                                onClick = { viewModel.shareTracksViaSystemIntent(context) },
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                                shape = RoundedCornerShape(8.dp)
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = AuraPrimary)
                                             ) {
-                                                Text("Send Now", style = MaterialTheme.typography.labelSmall)
+                                                Text("Send Files", style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
                                     }
@@ -421,13 +421,14 @@ fun P2PSharingScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        val currentDeviceModel = "${android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${android.os.Build.MODEL}"
                         Text(
                             text = "Visible to Nearby Devices",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Device Name: Pixel 9 Pro (Aura P2P Ready)\nAsk sender to scan QR or select your device name.",
+                            text = "Device Name: $currentDeviceModel (Aura P2P Ready)\nAsk sender to scan QR or connect on local network.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center

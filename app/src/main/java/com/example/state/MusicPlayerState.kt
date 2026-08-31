@@ -209,10 +209,16 @@ class AuraViewModel : ViewModel() {
 
     private fun playCurrentTrackWithMediaPlayer() {
         val ctx = applicationContext ?: return
-        val track = currentTrack ?: return
+        val track技巧 = currentTrack ?: return
 
         try {
-            mediaPlayer?.release()
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.reset()
+                mediaPlayer?.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             mediaPlayer = null
 
             val newPlayer = MediaPlayer().apply {
@@ -220,44 +226,102 @@ class AuraViewModel : ViewModel() {
                     AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setLegacyStreamType(android.media.AudioManager.STREAM_MUSIC)
                         .build()
                 )
+            }
 
-                if (!track.contentUriString.isNullOrEmpty()) {
-                    setDataSource(ctx, Uri.parse(track.contentUriString))
-                } else if (track.filePath.isNotEmpty() && File(track.filePath).exists()) {
-                    setDataSource(track.filePath)
+            var dataSourceSet = false
+            val uriString = track技巧.contentUriString
+
+            // Method 1: ContentResolver AssetFileDescriptor
+            if (!uriString.isNullOrEmpty()) {
+                try {
+                    val parsedUri = Uri.parse(uriString)
+                    ctx.contentResolver.openAssetFileDescriptor(parsedUri, "r")?.use { afd ->
+                        newPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                        dataSourceSet = true
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AuraPlayer", "AssetFileDescriptor failed: ${e.message}")
                 }
+            }
 
-                setOnPreparedListener { mp ->
+            // Method 2: ContentResolver FileDescriptor
+            if (!dataSourceSet && !uriString.isNullOrEmpty()) {
+                try {
+                    val parsedUri技巧 = Uri.parse(uriString)
+                    ctx.contentResolver.openFileDescriptor(parsedUri技巧, "r")?.use { pfd ->
+                        newPlayer.setDataSource(pfd.fileDescriptor)
+                        dataSourceSet = true
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AuraPlayer", "FileDescriptor failed: ${e.message}")
+                }
+            }
+
+            // Method 3: Direct Uri with Context
+            if (!dataSourceSet && !uriString.isNullOrEmpty()) {
+                try {
+                    newPlayer.setDataSource(ctx, Uri.parse(uriString))
+                    dataSourceSet = true
+                } catch (e: Exception) {
+                    android.util.Log.w("AuraPlayer", "Context Uri failed: ${e.message}")
+                }
+            }
+
+            // Method 4: File Path
+            if (!dataSourceSet && track技巧.filePath.isNotEmpty()) {
+                try {
+                    val f = File(track技巧.filePath)
+                    if (f.exists() && f.canRead()) {
+                        newPlayer.setDataSource(track技巧.filePath)
+                        dataSourceSet = true
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AuraPlayer", "File Path failed: ${e.message}")
+                }
+            }
+
+            if (!dataSourceSet) {
+                android.util.Log.e("AuraPlayer", "Could not set data source for track: ${track技巧.title}")
+                return
+            }
+
+            newPlayer.setOnPreparedListener { mp ->
+                try {
+                    mp.setVolume(1.0f, 1.0f)
+                    if (playbackPositionSeconds > 0f) {
+                        mp.seekTo((playbackPositionSeconds * 1000).toInt())
+                    }
                     if (isPlaying) {
-                        if (playbackPositionSeconds > 0f) {
-                            mp.seekTo((playbackPositionSeconds * 1000).toInt())
-                        }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            try {
-                                mp.playbackParams = mp.playbackParams.setSpeed(playbackSpeed).setPitch(playbackPitch)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
                         mp.start()
                     }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && (playbackSpeed != 1.0f || playbackPitch != 1.0f)) {
+                        try {
+                            mp.playbackParams = mp.playbackParams.setSpeed(playbackSpeed).setPitch(playbackPitch)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AuraPlayer", "OnPrepared error: ${e.message}")
                 }
-
-                setOnCompletionListener {
-                    skipToNext()
-                }
-
-                setOnErrorListener { _, _, _ ->
-                    true // Return true to indicate error handled
-                }
-
-                prepareAsync()
             }
+
+            newPlayer.setOnCompletionListener {
+                skipToNext()
+            }
+
+            newPlayer.setOnErrorListener { _, what, extra ->
+                android.util.Log.e("AuraPlayer", "MediaPlayer error what=$what extra=$extra")
+                true
+            }
+
+            newPlayer.prepareAsync()
             mediaPlayer = newPlayer
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("AuraPlayer", "playCurrentTrackWithMediaPlayer exception: ${e.message}", e)
         }
     }
 

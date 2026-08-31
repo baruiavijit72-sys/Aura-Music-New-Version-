@@ -56,78 +56,84 @@ fun NowPlayingScreen(
 
     val currentRotation = if (viewModel.isPlaying) rotationAngle else 0f
 
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val bgGradient = remember(track.coverGradient, backgroundColor) {
+    val bgGradient = remember(track.coverGradient) {
         listOf(
-            Color(track.coverGradient.first()).copy(alpha = 0.5f),
-            Color(track.coverGradient.getOrElse(1) { track.coverGradient.first() }).copy(alpha = 0.25f),
-            backgroundColor
+            Color(track.coverGradient.first()).copy(alpha = 0.85f),
+            Color(0xFF0F172A),
+            Color(0xFF070B14)
         )
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = Color(0xFF070B14)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(bottom = 24.dp)
+                .background(Brush.verticalGradient(bgGradient))
         ) {
-            // Top Bar
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(bottom = 24.dp)
             ) {
-                IconButton(onClick = { viewModel.isNowPlayingExpanded = false }) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Collapse",
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "PLAYING FROM LIBRARY",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = track.album,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Row {
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.EQUALIZER) }) {
+                // Top Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { viewModel.isNowPlayingExpanded = false }) {
                         Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = "Equalizer",
-                            tint = AuraPrimary
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Collapse",
+                            modifier = Modifier.size(32.dp),
+                            tint = Color.White
                         )
                     }
-                    IconButton(onClick = { viewModel.isQueueSheetVisible = true }) {
-                        Icon(
-                            imageVector = Icons.Default.QueueMusic,
-                            contentDescription = "Queue",
-                            tint = MaterialTheme.colorScheme.onSurface
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "PLAYING FROM LIBRARY",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                letterSpacing = 1.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = Color.LightGray
+                        )
+                        Text(
+                            text = track.album,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    Row {
+                        IconButton(onClick = {
+                            viewModel.isNowPlayingExpanded = false
+                            viewModel.navigateTo(AppScreen.EQUALIZER)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = "Equalizer",
+                                tint = AuraSecondary
+                            )
+                        }
+                        IconButton(onClick = { viewModel.isQueueSheetVisible = true }) {
+                            Icon(
+                                imageVector = Icons.Default.QueueMusic,
+                                contentDescription = "Queue",
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
-            }
 
             // View Switcher Tabs (Cover, Synced Lyrics, Audio Engine)
             Row(
@@ -498,6 +504,7 @@ fun NowPlayingScreen(
             }
         }
     }
+}
 }
 
 @Composable
