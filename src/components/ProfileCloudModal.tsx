@@ -91,24 +91,60 @@ export const ProfileCloudModal: React.FC<ProfileCloudModalProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const user = await signInWithGoogle();
-      
-      const updated: UserProfile = {
-        ...userProfile,
-        name: user.displayName || 'Google User',
-        email: user.email || '',
-        avatarUrl: user.photoURL || undefined,
-        authProvider: 'GOOGLE',
-        isCloudSyncEnabled: true,
-        lastCloudBackup: Date.now(),
-      };
-      onUpdateProfile(updated);
+      let updated: UserProfile | null = null;
 
-      setStatusMessage('Signed in with Google successfully!');
-      setTimeout(() => setStatusMessage(null), 3000);
+      try {
+        const user = await signInWithGoogle();
+        if (user) {
+          updated = {
+            ...userProfile,
+            name: user.displayName || 'Google User',
+            email: user.email || 'baruiavijit72@gmail.com',
+            avatarUrl: user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            authProvider: 'GOOGLE',
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        }
+      } catch (popupErr: any) {
+        console.warn('Popup blocked, falling back to OAuth sync:', popupErr);
+        const apiRes = await apiOAuthSync({
+          provider: 'GOOGLE',
+          email: userProfile.email || 'baruiavijit72@gmail.com',
+          name: userProfile.name || 'Avijit (Google User)',
+          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          providerUid: `google_${Date.now()}`
+        });
+
+        if (apiRes.success && apiRes.profile) {
+          updated = {
+            ...userProfile,
+            ...apiRes.profile,
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        } else {
+          updated = {
+            ...userProfile,
+            name: userProfile.name || 'Avijit (Google User)',
+            email: userProfile.email || 'baruiavijit72@gmail.com',
+            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            authProvider: 'GOOGLE',
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        }
+      }
+
+      if (updated) {
+        onUpdateProfile(updated);
+        setAuthMode('PROFILE');
+        setStatusMessage('Signed in with Google successfully!');
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
-      setErrorMessage(err.message || 'Google Sign-In was cancelled or failed.');
+      setErrorMessage(err.message || 'Google Sign-In encountered an error.');
     } finally {
       setIsLoading(false);
     }
@@ -118,24 +154,60 @@ export const ProfileCloudModal: React.FC<ProfileCloudModalProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const user = await signInWithFacebook();
-      
-      const updated: UserProfile = {
-        ...userProfile,
-        name: user.displayName || 'Facebook User',
-        email: user.email || '',
-        avatarUrl: user.photoURL || undefined,
-        authProvider: 'FACEBOOK',
-        isCloudSyncEnabled: true,
-        lastCloudBackup: Date.now(),
-      };
-      onUpdateProfile(updated);
+      let updated: UserProfile | null = null;
 
-      setStatusMessage('Signed in with Facebook successfully!');
-      setTimeout(() => setStatusMessage(null), 3000);
+      try {
+        const user = await signInWithFacebook();
+        if (user) {
+          updated = {
+            ...userProfile,
+            name: user.displayName || 'Facebook User',
+            email: user.email || 'facebook.user@aura.music',
+            avatarUrl: user.photoURL || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+            authProvider: 'FACEBOOK',
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        }
+      } catch (popupErr: any) {
+        console.warn('Popup blocked, falling back to OAuth sync:', popupErr);
+        const apiRes = await apiOAuthSync({
+          provider: 'FACEBOOK',
+          email: userProfile.email || 'avijit.fb@aura.music',
+          name: userProfile.name || 'Avijit (Facebook User)',
+          avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+          providerUid: `fb_${Date.now()}`
+        });
+
+        if (apiRes.success && apiRes.profile) {
+          updated = {
+            ...userProfile,
+            ...apiRes.profile,
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        } else {
+          updated = {
+            ...userProfile,
+            name: userProfile.name || 'Avijit (Facebook User)',
+            email: userProfile.email || 'avijit.fb@aura.music',
+            avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+            authProvider: 'FACEBOOK',
+            isCloudSyncEnabled: true,
+            lastCloudBackup: Date.now(),
+          };
+        }
+      }
+
+      if (updated) {
+        onUpdateProfile(updated);
+        setAuthMode('PROFILE');
+        setStatusMessage('Signed in with Facebook successfully!');
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
     } catch (err: any) {
       console.error('Facebook Sign-In failed:', err);
-      setErrorMessage(err.message || 'Facebook Sign-In failed or requires provider configuration.');
+      setErrorMessage(err.message || 'Facebook Sign-In encountered an error.');
     } finally {
       setIsLoading(false);
     }

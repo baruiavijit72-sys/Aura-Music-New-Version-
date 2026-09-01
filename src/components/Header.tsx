@@ -48,7 +48,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenP2P,
   onOpenProfile,
   onOpenSystem,
-  onOpenSplash,
   iconTheme = 'cosmic-clef',
   userProfile
 }) => {
@@ -63,17 +62,49 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-black/80 border-b border-white/10 px-4 py-3 transition-all">
-        <div className="max-w-6xl mx-auto flex flex-col gap-3">
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-black/85 border-b border-white/10 px-4 py-2.5 transition-all shadow-xl shadow-black/40">
+        <div className="max-w-6xl mx-auto flex flex-col gap-2.5">
           
+          {/* TOP ULTRA-STYLISH SIGNATURE RIBBON: MADE BY AVIJIT */}
+          <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/5">
+            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono tracking-widest uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <span>Aura Hi-Res Audio</span>
+            </div>
+
+            {/* Luxurious Signature Pill */}
+            <div className="relative group flex items-center">
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-500/25 via-rose-500/25 to-cyan-500/25 blur-sm opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div className="relative px-3.5 py-1 rounded-full bg-gradient-to-r from-zinc-950 via-black to-zinc-950 border border-amber-300/30 backdrop-blur-md flex items-center gap-1.5 shadow-[0_2px_12px_rgba(251,191,36,0.15)]">
+                <Sparkles className="w-3 h-3 text-amber-300 animate-spin-slow shrink-0" />
+                <span className="text-[10px] font-semibold tracking-wider uppercase text-zinc-300">
+                  Made by
+                </span>
+                <div className="w-1 h-1 rotate-45 bg-amber-300 shadow-[0_0_6px_#fde047]" />
+                <span 
+                  style={{ fontFamily: "'Playfair Display', 'Cinzel', serif" }}
+                  className="text-xs sm:text-sm font-black italic tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-rose-200 to-amber-300 drop-shadow-[0_1px_8px_rgba(251,191,36,0.5)]"
+                >
+                  Avijit
+                </span>
+                <Sparkles className="w-2.5 h-2.5 text-cyan-300 shrink-0 ml-0.5" />
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                DSP 32-Bit Lossless
+              </span>
+            </div>
+          </div>
+
           {/* Main Top Row: Brand on left, clean Icon Actions on right */}
           <div className="flex items-center justify-between gap-3">
             
             {/* Logo and Brand Title */}
             <div 
-              onClick={onOpenSplash}
-              className={`flex items-center gap-2.5 ${onOpenSplash ? 'cursor-pointer group' : ''}`}
-              title="Aura Hi-Res Audio (Click to replay Splash Experience)"
+              className="flex items-center gap-2.5"
+              title="Aura Hi-Res Audio Player"
             >
               <AuraAppIcon 
                 size={36} 
@@ -81,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
                 variant="full" 
                 animated={false} 
                 glow={true} 
-                className="transition-transform duration-300 group-hover:scale-110"
+                className="transition-transform duration-300 hover:scale-105"
               />
               <div className="flex flex-col">
                 <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 leading-none">

@@ -571,8 +571,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* Flagship Aura Identity & Disney+ Hotstar Splash Experience */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-zinc-900 to-sky-950/30 border border-cyan-500/20 space-y-6">
+      {/* Flagship Aura Identity */}
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-zinc-900 to-sky-950/30 border border-cyan-500/20 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <AuraAppIcon size={52} variant="full" animated={true} glow={true} />
@@ -580,7 +580,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Aura Music Signature Identity</span>
                 <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 text-[10px] font-bold border border-cyan-500/30">
-                  Disney+ Hotstar Edition
+                  32-Bit Hi-Res Edition
                 </span>
               </h3>
               <p className="text-[11px] text-zinc-400">
@@ -588,32 +588,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Featured Splash Screen Showcase & Play Button */}
-        <div className="p-4 rounded-2xl bg-zinc-950/80 border border-cyan-500/15 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-cyan-500/25 flex-shrink-0 flex items-center justify-center">
-              <div className="w-full h-full bg-[#020b1e] rounded-[14px] flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-cyan-300 animate-pulse" />
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">Disney+ Hotstar Cinematic Splash Screen</p>
-              <p className="text-[11px] text-zinc-400">
-                Sweeping luminous stardust comet arc, grand AURA typography & celestial harp chime
-              </p>
-            </div>
-          </div>
-
-          <button
-            id="btn-replay-splash"
-            onClick={onOpenSplash}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/30 active:scale-95 cursor-pointer flex-shrink-0"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Launch Splash Experience</span>
-          </button>
         </div>
       </div>
 
