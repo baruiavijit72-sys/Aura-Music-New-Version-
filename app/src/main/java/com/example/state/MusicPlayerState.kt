@@ -637,6 +637,49 @@ class AuraViewModel : ViewModel() {
         }
     }
 
+    fun setSpeed(speed: Float) {
+        updatePlaybackSpeed(speed)
+    }
+
+    fun setPitch(pitch: Float) {
+        updatePlaybackPitch(pitch)
+    }
+
+    fun playNext(track: Track) {
+        val currentIdx = currentTrackIndex
+        if (currentIdx in playQueue.indices) {
+            val mutable = playQueue.toMutableList()
+            // remove if already in queue to avoid duplicates right away
+            mutable.remove(track)
+            val insertPos = (currentIdx + 1).coerceAtMost(mutable.size)
+            mutable.add(insertPos, track)
+            playQueue = mutable
+        } else {
+            playQueue = playQueue + track
+        }
+    }
+
+    fun addToQueue(track: Track) {
+        playQueue = playQueue + track
+    }
+
+    fun removeQueueItem(index: Int) {
+        if (index in playQueue.indices && playQueue.size > 1) {
+            val mutable = playQueue.toMutableList()
+            mutable.removeAt(index)
+            playQueue = mutable
+            if (index < currentTrackIndex) {
+                currentTrackIndex--
+            } else if (currentTrackIndex >= playQueue.size) {
+                currentTrackIndex = playQueue.size - 1
+            }
+        }
+    }
+
+    fun removeFromQueue(index: Int) {
+        removeQueueItem(index)
+    }
+
     fun reorderQueue(fromIndex: Int, toIndex: Int) {
         if (fromIndex in playQueue.indices && toIndex in playQueue.indices) {
             val mutable = playQueue.toMutableList()
