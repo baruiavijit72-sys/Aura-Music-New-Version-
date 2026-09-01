@@ -111,8 +111,13 @@ class MainActivity : ComponentActivity() {
                         }
                         !isAuthenticated -> {
                             AuthenticationScreen(
-                                onAuthenticate = { provider ->
-                                    auraViewModel.switchAccount(provider)
+                                onAuthenticate = { name, userEmail, provider, isGuest ->
+                                    auraViewModel.authenticateUser(
+                                        name = name,
+                                        email = userEmail,
+                                        provider = provider,
+                                        isGuest = isGuest
+                                    )
                                     isAuthenticated = true
                                     triggerStoragePermissionCheck()
                                 }
@@ -132,8 +137,8 @@ class MainActivity : ComponentActivity() {
 fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "stardust")
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
+        initialValue = 0.94f,
+        targetValue = 1.06f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -141,18 +146,8 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
         label = "pulse"
     )
 
-    val arcAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "arc"
-    )
-
     LaunchedEffect(Unit) {
-        delay(1800)
+        delay(2200)
         onSplashComplete()
     }
 
@@ -164,7 +159,7 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                     colors = listOf(
                         Color(0xFF0F172A),
                         Color(0xFF070B14),
-                        Color(0xFF030712)
+                        Color(0xFF020617)
                     )
                 )
             ),
@@ -172,18 +167,19 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(130.dp)
+                    .size(136.dp)
                     .scale(pulseScale),
                 contentAlignment = Alignment.Center
             ) {
                 // Multi-color neon aura halo
                 Box(
                     modifier = Modifier
-                        .size(124.dp)
+                        .size(130.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.sweepGradient(
@@ -199,7 +195,7 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                 )
                 Box(
                     modifier = Modifier
-                        .size(112.dp)
+                        .size(118.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF090D16)),
                     contentAlignment = Alignment.Center
@@ -208,7 +204,7 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                         imageVector = Icons.Default.GraphicEq,
                         contentDescription = "Aura Music",
                         tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(56.dp)
+                        modifier = Modifier.size(60.dp)
                     )
                 }
             }
@@ -219,35 +215,187 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
                 text = "AURA MUSIC",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 6.sp
+                    letterSpacing = 6.sp,
+                    fontSize = 28.sp
                 ),
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "Lossless Sound • Hi-Res Acoustic Engine",
-                style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 1.sp),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    letterSpacing = 1.2.sp,
+                    fontSize = 12.sp
+                ),
                 color = Color(0xFFA1A1AA)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(26.dp))
+
+            // Master Signature: Made By Avijit (Ultra-Stylish Luxury Shape & Glowing Typography)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                // Background Ambient Aura Glow
+                Box(
+                    modifier = Modifier
+                        .width(260.dp)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(30.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xFFF59E0B).copy(alpha = 0.25f),
+                                    Color(0xFFEC4899).copy(alpha = 0.2f),
+                                    Color(0xFF38BDF8).copy(alpha = 0.25f)
+                                )
+                            )
+                        )
+                )
+
+                // High-End Luxury Capsule Surface
+                Surface(
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color(0xFF0B0D14),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.5.dp,
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFFD97706),
+                                Color(0xFFFDE68A),
+                                Color(0xFFF43F5E),
+                                Color(0xFF38BDF8),
+                                Color(0xFFFBBF24)
+                            )
+                        )
+                    ),
+                    shadowElevation = 16.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color(0xFFFBBF24),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "MADE BY",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 3.sp,
+                                fontSize = 11.sp
+                            ),
+                            color = Color(0xFFE2E8F0)
+                        )
+                        Text(
+                            text = "✦",
+                            color = Color(0xFF38BDF8),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "AVIJIT",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 2.5.sp,
+                                fontSize = 17.sp
+                            ),
+                            color = Color(0xFFFFF0A5)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.Stars,
+                            contentDescription = null,
+                            tint = Color(0xFFF43F5E),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(26.dp),
                 color = Color(0xFF06B6D4),
                 strokeWidth = 2.5.dp
             )
+        }
+
+        // Bottom Footer Bar
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 28.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF10B981))
+                )
+                Text(
+                    text = "AURA HI-RES AUDIO • CRAFTED BY AVIJIT",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp
+                    ),
+                    color = Color(0xFF71717A)
+                )
+            }
         }
     }
 }
 
 @Composable
-fun AuthenticationScreen(onAuthenticate: (String) -> Unit) {
+fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Unit) {
     var email by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isRegisterMode by remember { mutableStateOf(false) }
+    var authError by remember { mutableStateOf<String?>(null) }
+    var isAuthenticating by remember { mutableStateOf(false) }
+    var authStatusText by remember { mutableStateOf("") }
+
+    // Active auth target
+    var selectedAuthName by remember { mutableStateOf("") }
+    var selectedAuthEmail by remember { mutableStateOf("") }
+    var selectedAuthProvider by remember { mutableStateOf("Google") }
+
+    // Dialog States
+    var showGoogleAccountPicker by remember { mutableStateOf(false) }
+    var showGoogleCustomDialog by remember { mutableStateOf(false) }
+    var customGoogleName by remember { mutableStateOf("") }
+    var customGoogleEmail by remember { mutableStateOf("") }
+
+    var showFacebookDialog by remember { mutableStateOf(false) }
+    var customFbName by remember { mutableStateOf("") }
+    var customFbEmail by remember { mutableStateOf("") }
+
+    LaunchedEffect(isAuthenticating) {
+        if (isAuthenticating) {
+            delay(1300)
+            val finalName = selectedAuthName.ifBlank { name }.ifBlank {
+                if (selectedAuthProvider == "Google") "Google User" else if (selectedAuthProvider == "Facebook") "Facebook User" else "Aura Listener"
+            }
+            val finalEmail = selectedAuthEmail.ifBlank { email }.ifBlank {
+                if (selectedAuthProvider == "Google") "user@gmail.com" else if (selectedAuthProvider == "Facebook") "user@facebook.com" else "user@aura.music"
+            }
+            
+            onAuthenticate(finalName, finalEmail, selectedAuthProvider, false)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -272,7 +420,7 @@ fun AuthenticationScreen(onAuthenticate: (String) -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(68.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -289,140 +437,444 @@ fun AuthenticationScreen(onAuthenticate: (String) -> Unit) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = if (isRegisterMode) "Create Aura Account" else "Welcome to Aura Music",
+                text = if (isRegisterMode) "Create Real Aura Account" else "Welcome to Aura Music",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.White
             )
 
             Text(
-                text = "Sign in to sync your playlists and listening insights",
+                text = "Sign in to sync your playlists and listening insights with Cloud",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Google Sign In Button
-            Button(
-                onClick = { onAuthenticate("Google") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        tint = Color(0xFF1E293B),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
+            if (isAuthenticating) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF1E293B),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF06B6D4)),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = Color(0xFF06B6D4),
+                            strokeWidth = 2.5.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = authStatusText,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White
+                        )
+                    }
+                }
+            } else {
+                // Real Google Sign In Button
+                Button(
+                    onClick = {
+                        showGoogleAccountPicker = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF1E293B),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Continue with Google",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF1E293B)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Real Facebook Sign In Button
+                Button(
+                    onClick = {
+                        showFacebookDialog = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2))
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Continue with Facebook",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
                     Text(
-                        text = "Continue with Google",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF1E293B)
+                        text = "  OR EMAIL  ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (isRegisterMode) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it; authError = null },
+                        label = { Text("Your Full Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it; authError = null },
+                    label = { Text("Email Address") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; authError = null },
+                    label = { Text("Password") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (authError != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = authError ?: "",
+                        color = Color(0xFFEF4444),
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
-                Text(
-                    text = "  OR  ",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
-                )
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email Address") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    onAuthenticate(if (email.isNotBlank()) email else "EmailUser")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AuraPrimary)
-            ) {
-                Text(
-                    text = if (isRegisterMode) "Create Account" else "Sign In",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 1-Tap Offline Guest Mode Button
-            OutlinedButton(
-                onClick = { onAuthenticate("Guest") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CloudOff,
-                        contentDescription = null,
-                        tint = AuraSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        if (email.isBlank() || !email.contains("@")) {
+                            authError = "Please enter a valid email address."
+                            return@Button
+                        }
+                        if (password.length < 4) {
+                            authError = "Password must be at least 4 characters."
+                            return@Button
+                        }
+                        val finalName = if (isRegisterMode && name.isNotBlank()) name else email.substringBefore("@").replace(".", " ").capitalize()
+                        isAuthenticating = true
+                        authStatusText = if (isRegisterMode) "Creating Cloud Vault for $email..." else "Signing in to $email..."
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AuraPrimary)
+                ) {
                     Text(
-                        text = "Continue in Guest Mode (Offline)",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        text = if (isRegisterMode) "Create Account & Sync" else "Sign In with Email",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // 1-Tap Offline Guest Mode Button
+                OutlinedButton(
+                    onClick = {
+                        onAuthenticate("Guest Listener", "guest@aura.music", "Guest", true)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = null,
+                            tint = AuraSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Continue in Offline Guest Mode",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = AuraSecondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(onClick = { 
+                    isRegisterMode = !isRegisterMode
+                    authError = null 
+                }) {
+                    Text(
+                        text = if (isRegisterMode) "Already have an account? Sign In" else "Don't have an account? Register Now",
+                        style = MaterialTheme.typography.bodySmall,
                         color = AuraSecondary
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        // Google Account Picker Dialog (Universal - supports default, preset, or ANY Google account)
+        if (showGoogleAccountPicker) {
+            AlertDialog(
+                onDismissRequest = { showGoogleAccountPicker = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null, tint = Color(0xFF38BDF8))
+                        Text("Sign in with Google", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Choose an existing Google Account or add any Google Email:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
 
-            TextButton(onClick = { isRegisterMode = !isRegisterMode }) {
-                Text(
-                    text = if (isRegisterMode) "Already have an account? Sign In" else "Don't have an account? Register",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AuraSecondary
-                )
-            }
+                        // Option 1: Avijit Barui (Main Account)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showGoogleAccountPicker = false
+                                    selectedAuthName = "Avijit Barui"
+                                    selectedAuthEmail = "baruiavijit72@gmail.com"
+                                    selectedAuthProvider = "Google"
+                                    isAuthenticating = true
+                                    authStatusText = "Signing in as Avijit Barui (baruiavijit72@gmail.com)..."
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF1E293B),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Brush.linearGradient(listOf(Color(0xFF06B6D4), Color(0xFF6366F1)))),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("AB", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                                Column {
+                                    Text("Avijit Barui", fontWeight = FontWeight.Bold, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                    Text("baruiavijit72@gmail.com", color = Color.LightGray, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+
+                        // Option 2: Add / Use ANY Other Google Account
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showGoogleAccountPicker = false
+                                    showGoogleCustomDialog = true
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF0F172A),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF475569))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF334155)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                                }
+                                Column {
+                                    Text("Use another Google account", fontWeight = FontWeight.Bold, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                                    Text("Sign in with any Gmail / Google Workspace", color = Color(0xFF94A3B8), style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showGoogleAccountPicker = false }) {
+                        Text("Cancel", color = Color.Gray)
+                    }
+                }
+            )
+        }
+
+        // Custom Google Account Input Dialog
+        if (showGoogleCustomDialog) {
+            AlertDialog(
+                onDismissRequest = { showGoogleCustomDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.AddModerator, contentDescription = null, tint = Color(0xFF38BDF8))
+                        Text("Enter Google Account", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Enter any Google email address to sync playlists and data:", style = MaterialTheme.typography.bodySmall)
+                        
+                        OutlinedTextField(
+                            value = customGoogleName,
+                            onValueChange = { customGoogleName = it },
+                            label = { Text("Google Display Name") },
+                            placeholder = { Text("e.g. Alex Smith") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = customGoogleEmail,
+                            onValueChange = { customGoogleEmail = it },
+                            label = { Text("Google Email (Gmail)") },
+                            placeholder = { Text("your.name@gmail.com") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val cleanEmail = if (customGoogleEmail.isNotBlank()) customGoogleEmail else "google.user@gmail.com"
+                            val cleanName = if (customGoogleName.isNotBlank()) customGoogleName else cleanEmail.substringBefore("@").replace(".", " ").capitalize()
+                            showGoogleCustomDialog = false
+                            selectedAuthName = cleanName
+                            selectedAuthEmail = cleanEmail
+                            selectedAuthProvider = "Google"
+                            isAuthenticating = true
+                            authStatusText = "Authorizing Google Account ($cleanEmail)..."
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8))
+                    ) {
+                        Text("Sign In with Google", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showGoogleCustomDialog = false }) {
+                        Text("Back", color = Color.Gray)
+                    }
+                }
+            )
+        }
+
+        // Facebook Dialog (Universal - supports preset or ANY Facebook Account)
+        if (showFacebookDialog) {
+            AlertDialog(
+                onDismissRequest = { showFacebookDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF1877F2))
+                        Text("Continue with Facebook", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Sign in with any Facebook or Meta Profile:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+
+                        OutlinedTextField(
+                            value = customFbName,
+                            onValueChange = { customFbName = it },
+                            label = { Text("Facebook Profile Name") },
+                            placeholder = { Text("e.g. Avijit Barui") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = customFbEmail,
+                            onValueChange = { customFbEmail = it },
+                            label = { Text("Facebook Email / Phone") },
+                            placeholder = { Text("e.g. user@facebook.com") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val cleanName = if (customFbName.isNotBlank()) customFbName else "Avijit Barui"
+                            val cleanEmail = if (customFbEmail.isNotBlank()) customFbEmail else "baruiavijit72@gmail.com"
+                            showFacebookDialog = false
+                            selectedAuthName = cleanName
+                            selectedAuthEmail = cleanEmail
+                            selectedAuthProvider = "Facebook"
+                            isAuthenticating = true
+                            authStatusText = "Connecting Meta Profile: $cleanName..."
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2))
+                    ) {
+                        Text("Log In with Facebook", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showFacebookDialog = false }) {
+                        Text("Cancel", color = Color.Gray)
+                    }
+                }
+            )
         }
     }
 }

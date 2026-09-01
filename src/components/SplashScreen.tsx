@@ -415,36 +415,36 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                   Hi-Res Audio Originals & Soundscapes
                 </motion.div>
 
-                {/* ELEGANT & STYLISH SIGNATURE: MADE BY AVIJIT */}
+                {/* ELEGANT & STYLISH SIGNATURE: MADE BY AVIJIT (Royal Capsule & Custom Styling) */}
                 <motion.div
                   id="splash-author-signature-center"
                   initial={{ opacity: 0, scale: 0.9, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.9, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="mt-5 flex flex-col items-center justify-center relative group"
+                  className="mt-6 flex flex-col items-center justify-center relative group"
                 >
-                  {/* Glowing Ambient Halo */}
-                  <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-amber-400/25 via-rose-500/25 to-cyan-400/25 blur-lg opacity-80 animate-pulse pointer-events-none" />
+                  {/* Glowing Multi-Color Ambient Halo */}
+                  <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-500/30 via-rose-500/30 to-cyan-400/30 blur-xl opacity-90 animate-pulse pointer-events-none" />
 
-                  {/* Luxury Glassmorphism Badge */}
-                  <div className="relative px-6 py-2 rounded-full bg-gradient-to-r from-black/60 via-zinc-900/80 to-black/60 border border-amber-300/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_16px_rgba(251,191,36,0.25)] flex items-center gap-2.5">
+                  {/* Luxury Royal Surface Capsule */}
+                  <div className="relative px-7 py-2.5 rounded-full bg-gradient-to-r from-[#0B0D14] via-[#121420] to-[#0B0D14] border-1.5 border-amber-300/50 shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_20px_rgba(251,191,36,0.35)] flex items-center gap-3">
                     <Sparkles className="w-4 h-4 text-amber-300 animate-spin-slow shrink-0" />
                     
-                    <span className="text-[11px] sm:text-xs font-semibold tracking-[0.2em] uppercase text-zinc-300">
-                      Made by
+                    <span className="text-[11px] sm:text-xs font-black tracking-[0.25em] uppercase text-slate-200">
+                      MADE BY
                     </span>
 
-                    <div className="w-1.5 h-1.5 rotate-45 bg-amber-300 shadow-[0_0_8px_#fde047]" />
+                    <span className="text-cyan-400 text-xs font-black">✦</span>
 
                     {/* Highly Stylish Avijit Script Signature */}
                     <span 
-                      style={{ fontFamily: "'Playfair Display', 'Cinzel', serif" }}
-                      className="text-base sm:text-lg font-black italic tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-rose-200 to-amber-300 drop-shadow-[0_2px_14px_rgba(251,191,36,0.6)] px-0.5"
+                      style={{ fontFamily: "'Playfair Display', 'Cinzel', serif", letterSpacing: "0.1em" }}
+                      className="text-lg sm:text-xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-rose-100 to-amber-300 drop-shadow-[0_2px_14px_rgba(251,191,36,0.7)] px-1"
                     >
-                      Avijit
+                      AVIJIT
                     </span>
 
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-pulse shrink-0" />
+                    <Sparkles className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
                   </div>
                 </motion.div>
               </motion.div>

@@ -929,6 +929,33 @@ class AuraViewModel : ViewModel() {
         )
     }
 
+    fun authenticateUser(
+        name: String,
+        email: String,
+        provider: String,
+        isGuest: Boolean = false
+    ) {
+        val cleanName = if (isGuest) "Guest Listener" else name.ifBlank { "Avijit Barui" }
+        val cleanEmail = if (isGuest) "guest@aura.music" else email.ifBlank { "baruiavijit72@gmail.com" }
+        val initials = if (isGuest) "GU" else {
+            val parts = cleanName.trim().split(" ")
+            if (parts.size >= 2) {
+                "${parts[0].firstOrNull()?.uppercase() ?: ""}${parts[1].firstOrNull()?.uppercase() ?: ""}"
+            } else {
+                cleanName.take(2).uppercase().ifEmpty { "AB" }
+            }
+        }
+
+        userProfile = userProfile.copy(
+            displayName = cleanName,
+            email = cleanEmail,
+            authProvider = provider,
+            isGuest = isGuest,
+            avatarInitials = initials,
+            lastCloudSyncTime = System.currentTimeMillis()
+        )
+    }
+
     // Sleep timer
     fun setSleepTimer(minutes: Int) {
         sleepTimerMinutesRemaining = minutes

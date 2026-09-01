@@ -46,29 +46,41 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(bottom = 120.dp)
     ) {
-        // Top Signature Header: Made by Avijit
+        // Top Signature Header: Made by Avijit (Ultra-Stylish Ribbon)
         item {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                color = Color(0xFF121216),
-                border = BorderStroke(1.dp, Color(0xFFFBBF24).copy(alpha = 0.35f))
+                    .clip(RoundedCornerShape(20.dp)),
+                color = Color(0xFF0F1017),
+                border = BorderStroke(
+                    1.2.dp,
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFFD97706),
+                            Color(0xFFFBBF24),
+                            Color(0xFFEC4899),
+                            Color(0xFF38BDF8),
+                            Color(0xFFD97706)
+                        )
+                    )
+                ),
+                shadowElevation = 6.dp
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 9.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Stars,
+                            imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
                             tint = Color(0xFFFBBF24),
                             modifier = Modifier.size(16.dp)
@@ -77,26 +89,31 @@ fun HomeScreen(
                             text = "MADE BY",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.5.sp,
+                                letterSpacing = 2.sp,
                                 fontSize = 10.sp
                             ),
-                            color = Color.LightGray
+                            color = Color(0xFFCBD5E1)
+                        )
+                        Text(
+                            text = "✦",
+                            color = Color(0xFF38BDF8),
+                            fontSize = 11.sp
                         )
                         Text(
                             text = "AVIJIT",
-                            style = MaterialTheme.typography.titleSmall.copy(
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = 1.sp,
-                                fontSize = 13.sp
+                                letterSpacing = 1.8.sp,
+                                fontSize = 14.sp
                             ),
                             color = Color(0xFFFDE68A)
                         )
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = Color(0xFF10B981).copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
                     ) {
                         Text(
                             text = "32-BIT LOSSLESS",
@@ -106,7 +123,7 @@ fun HomeScreen(
                                 letterSpacing = 0.8.sp
                             ),
                             color = Color(0xFF34D399),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
