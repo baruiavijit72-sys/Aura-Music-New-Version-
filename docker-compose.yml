@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  aura-music-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: auramusic-backend:latest
+    container_name: aura_music_server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=aura_music_production_jwt_secret_key_99
+    volumes:
+      - aura_db_data:/app/.aura_data
+    networks:
+      - aura_network
+
+networks:
+  aura_network:
+    driver: bridge
+
+volumes:
+  aura_db_data:
+    driver: local

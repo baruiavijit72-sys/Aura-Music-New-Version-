@@ -24,6 +24,7 @@ import {
   signInWithEmail, 
   signUpWithEmail 
 } from '../lib/firebase';
+import { apiRegister, apiLogin, apiOAuthSync } from '../utils/apiService';
 import { AuraAppIcon } from './AuraAppIcon';
 
 interface AuthGatewayProps {
@@ -78,6 +79,28 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
 
     try {
       if (authStep === 'SIGNUP') {
+        // 1. First authenticate with our Full-Stack JWT & Bcrypt Backend Engine
+        try {
+          const apiRes = await apiRegister(name.trim(), email.trim(), password);
+          if (apiRes.success && apiRes.profile) {
+            // Also mirror to Firebase if possible
+            try {
+              await signUpWithEmail(email.trim(), password, name.trim() || undefined);
+            } catch {
+              // optional secondary mirror
+            }
+
+            setSuccessMessage('Account securely created with Bcrypt encryption & JWT active!');
+            setTimeout(() => {
+              onAuthenticated(apiRes.profile!);
+            }, 600);
+            return;
+          }
+        } catch (serverErr) {
+          console.warn('Backend server registering via fallback...', serverErr);
+        }
+
+        // Fallback to Firebase client SDK
         const user = await signUpWithEmail(email.trim(), password, name.trim() || undefined);
         setSuccessMessage('Account created successfully! Launching Aura Music...');
         setTimeout(() => {
@@ -92,6 +115,21 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
           });
         }, 500);
       } else {
+        // 1. First login with Full-Stack JWT Backend
+        try {
+          const apiRes = await apiLogin(email.trim(), password);
+          if (apiRes.success && apiRes.profile) {
+            setSuccessMessage('Verified with JWT & Bcrypt! Loading your soundscapes...');
+            setTimeout(() => {
+              onAuthenticated(apiRes.profile!);
+            }, 600);
+            return;
+          }
+        } catch (serverErr) {
+          console.warn('Backend login fallback...', serverErr);
+        }
+
+        // Fallback to Firebase client SDK
         const user = await signInWithEmail(email.trim(), password);
         setSuccessMessage('Signed in successfully! Loading your library & soundscapes...');
         setTimeout(() => {
@@ -135,7 +173,21 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     setErrorMessage(null);
     try {
       const user = await signInWithGoogle();
-      setSuccessMessage('Google authentication verified! Entering Aura Music...');
+      
+      // Sync with full-stack JWT backend
+      try {
+        await apiOAuthSync({
+          provider: 'GOOGLE',
+          email: user.email || '',
+          name: user.displayName || 'Google Listener',
+          avatarUrl: user.photoURL || undefined,
+          providerUid: user.uid
+        });
+      } catch (e) {
+        console.warn('OAuth backend sync notice:', e);
+      }
+
+      setSuccessMessage('Google OAuth 2.0 verified! Entering Aura Music...');
       setTimeout(() => {
         onAuthenticated({
           id: user.uid,
@@ -166,7 +218,21 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     setErrorMessage(null);
     try {
       const user = await signInWithFacebook();
-      setSuccessMessage('Facebook authentication verified! Entering Aura Music...');
+      
+      // Sync with full-stack JWT backend
+      try {
+        await apiOAuthSync({
+          provider: 'FACEBOOK',
+          email: user.email || '',
+          name: user.displayName || 'Facebook Listener',
+          avatarUrl: user.photoURL || undefined,
+          providerUid: user.uid
+        });
+      } catch (e) {
+        console.warn('OAuth backend sync notice:', e);
+      }
+
+      setSuccessMessage('Facebook OAuth 2.0 verified! Entering Aura Music...');
       setTimeout(() => {
         onAuthenticated({
           id: user.uid,

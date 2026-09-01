@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Track, Playlist } from '../types';
 import { useTranslation } from '../i18n/LanguageContext';
+import { RealAdBanner } from '../components/RealAdBanner';
 
 interface HomeViewProps {
   tracks: Track[];
@@ -80,6 +81,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Real Interactive Ad Slot */}
+      <RealAdBanner slotIndex={0} />
 
       {/* Quick Playlists Cards (if any exist) */}
       {playlists.length > 0 && (

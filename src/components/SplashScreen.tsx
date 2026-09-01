@@ -414,6 +414,38 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                 >
                   Hi-Res Audio Originals & Soundscapes
                 </motion.div>
+
+                {/* ELEGANT & STYLISH SIGNATURE: MADE BY AVIJIT */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 1.3, delay: 1.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="mt-6 flex flex-col items-center justify-center relative group"
+                >
+                  {/* Subtle Glowing Aura Backdrop */}
+                  <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-cyan-500/20 via-fuchsia-500/25 to-amber-400/20 blur-md opacity-70 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Elegant Pill Card */}
+                  <div className="relative px-5 py-1.5 rounded-full bg-gradient-to-r from-white/[0.07] via-white/[0.12] to-white/[0.07] border border-white/20 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.6)] flex items-center gap-2">
+                    <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] uppercase text-zinc-300">
+                      Crafted by
+                    </span>
+
+                    {/* Diamond Accent */}
+                    <div className="w-1 h-1 rotate-45 bg-cyan-300 shadow-[0_0_6px_#67e8f9]" />
+
+                    {/* Luxurious Signature Name */}
+                    <span 
+                      style={{ fontFamily: "'Playfair Display', 'Cinzel', serif" }}
+                      className="text-sm sm:text-base font-extrabold italic tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-rose-200 to-cyan-200 drop-shadow-[0_2px_12px_rgba(253,224,71,0.5)]"
+                    >
+                      Avijit
+                    </span>
+
+                    {/* Sparkle Icon */}
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse ml-0.5" />
+                  </div>
+                </motion.div>
               </motion.div>
             </div>
           </div>
@@ -424,8 +456,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center justify-between gap-4">
             
             {/* Ambient Brand Attribution */}
-            <div className="text-[11px] text-cyan-400/60 font-mono tracking-widest hidden sm:block uppercase">
-              Aura Music • Disney+ Hotstar Edition
+            <div className="text-[11px] text-cyan-400/70 font-mono tracking-wider hidden sm:flex items-center gap-1.5 uppercase">
+              <span>Aura Music</span>
+              <span>•</span>
+              <span className="text-amber-200 font-serif italic">Avijit Edition</span>
             </div>
 
             {/* Glowing Laser Progress Line */}
@@ -436,7 +470,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
               />
             </div>
 
-            {/* Subtle Skip Arrow Icon Button (No 'Enter App' Text) */}
+            {/* Subtle Skip Arrow Icon Button */}
             <button
               id="splash-skip-button"
               onClick={handleComplete}

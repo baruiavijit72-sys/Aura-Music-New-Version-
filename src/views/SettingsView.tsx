@@ -47,6 +47,7 @@ import { useTranslation } from '../i18n/LanguageContext';
 import { LanguageModal } from '../components/LanguageModal';
 import { AuraAppIcon, AppIconTheme } from '../components/AuraAppIcon';
 import { SplashSceneType } from '../components/SplashScreen';
+import { RealAdBanner } from '../components/RealAdBanner';
 
 interface SettingsViewProps {
   eqSettings: EqualizerSettings;
@@ -707,6 +708,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Featured Partner & Audiophile Ad */}
+      <RealAdBanner slotIndex={1} />
 
       {/* QR Code Modal for Scanning from Phone */}
       {showQrModal && (

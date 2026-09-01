@@ -29,6 +29,7 @@ import com.example.model.Track
 import com.example.state.AppScreen
 import com.example.state.AuraViewModel
 import com.example.ui.components.AudioVisualizer
+import com.example.ui.components.RealAdBanner
 import com.example.ui.components.TrackItem
 import com.example.ui.theme.AuraPrimary
 import com.example.ui.theme.AuraSecondary
@@ -216,6 +217,14 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // Real Interactive Ad Network Banner
+        item {
+            Spacer(modifier = Modifier.height(10.dp))
+            RealAdBanner(
+                campaignIndex = 0
+            )
         }
 
         // Jump Back In / Recently Played Carousel

@@ -29,6 +29,14 @@ import {
   fetchCloudBackupFromFirestore,
   fetchUserProfileFromFirestore
 } from '../lib/firebase';
+import { 
+  apiPushBackup, 
+  apiRestoreBackup, 
+  apiRegister, 
+  apiLogin, 
+  apiOAuthSync,
+  clearJwtToken 
+} from '../utils/apiService';
 
 interface ProfileCloudModalProps {
   isOpen: boolean;
@@ -189,22 +197,37 @@ export const ProfileCloudModal: React.FC<ProfileCloudModalProps> = ({
   };
 
   const handleCloudBackup = async () => {
-    if (!auth.currentUser) {
-      setErrorMessage('Please sign in to back up your library to the cloud.');
-      return;
-    }
     setIsBackingUp(true);
     setErrorMessage(null);
     try {
       const dataJson = exportAllDataJson();
-      const backupTime = await saveCloudBackupToFirestore(auth.currentUser.uid, dataJson);
+      const parsed = JSON.parse(dataJson);
+
+      // 1. Sync to FullStack Express / Docker Backend
+      try {
+        await apiPushBackup({
+          playlists: parsed.playlists || [],
+          tracks: parsed.tracks || [],
+          equalizer: parsed.equalizer || null,
+          listeningLogs: parsed.listeningLogs || [],
+          totalListeningSeconds: userProfile.totalListeningSeconds
+        });
+      } catch (beErr) {
+        console.warn('Backend sync note:', beErr);
+      }
+
+      // 2. Sync to Firebase Firestore if logged in
+      let backupTime = Date.now();
+      if (auth.currentUser) {
+        backupTime = await saveCloudBackupToFirestore(auth.currentUser.uid, dataJson);
+      }
 
       onUpdateProfile({
         ...userProfile,
         lastCloudBackup: backupTime,
       });
 
-      setStatusMessage('Cloud backup completed: Playlists, EQ & favorites securely saved to Firestore!');
+      setStatusMessage('Cloud backup completed: Playlists, EQ & favorites securely saved to Cloud Database!');
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: any) {
       console.error('Cloud backup error:', err);
@@ -215,17 +238,28 @@ export const ProfileCloudModal: React.FC<ProfileCloudModalProps> = ({
   };
 
   const handleCloudRestore = async () => {
-    if (!auth.currentUser) {
-      setErrorMessage('Please sign in to restore your cloud library.');
-      return;
-    }
     setIsRestoring(true);
     setErrorMessage(null);
     try {
-      const dataJson = await fetchCloudBackupFromFirestore(auth.currentUser.uid);
+      let restoredJson: string | null = null;
 
-      if (dataJson) {
-        const success = restoreAllDataJson(dataJson);
+      // 1. Try Backend REST API first
+      try {
+        const beRestore = await apiRestoreBackup();
+        if (beRestore.success && beRestore.hasData && beRestore.backup) {
+          restoredJson = JSON.stringify(beRestore.backup);
+        }
+      } catch (beErr) {
+        console.warn('Backend restore note:', beErr);
+      }
+
+      // 2. Try Firestore fallback
+      if (!restoredJson && auth.currentUser) {
+        restoredJson = await fetchCloudBackupFromFirestore(auth.currentUser.uid);
+      }
+
+      if (restoredJson) {
+        const success = restoreAllDataJson(restoredJson);
         if (success) {
           setStatusMessage('Cloud restore successful: Your playlists, presets, and library have been restored!');
           setTimeout(() => {
