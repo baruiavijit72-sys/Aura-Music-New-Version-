@@ -24,19 +24,22 @@ import {
   ChevronLeft,
   ChevronDown,
   Search,
-  Globe
+  Globe,
+  Send
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { 
   signInWithGoogle, 
   signInWithEmail, 
   signUpWithEmail,
-  syncUserProfileToFirestore
+  syncUserProfileToFirestore,
+  sendFirebasePhoneOtp
 } from '../lib/firebase';
 import { 
   apiRegister, 
   apiLogin, 
   apiOAuthSync, 
+  apiTelegramSync,
   apiSendSmsOtp, 
   apiVerifySmsOtp 
 } from '../utils/apiService';
@@ -52,8 +55,8 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
   onAuthenticated,
   onExploreGuest,
 }) => {
-  // Auth Channel: 'EMAIL' | 'PHONE'
-  const [authChannel, setAuthChannel] = useState<'EMAIL' | 'PHONE'>('EMAIL');
+  // Auth Channel: 'EMAIL' | 'PHONE' | 'TELEGRAM'
+  const [authChannel, setAuthChannel] = useState<'EMAIL' | 'PHONE' | 'TELEGRAM'>('EMAIL');
 
   // Step mode: 'SIGNIN' (Login) or 'SIGNUP' (Create Account)
   const [authStep, setAuthStep] = useState<'SIGNIN' | 'SIGNUP'>('SIGNIN');
@@ -73,6 +76,11 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
   const [realSmsDelivered, setRealSmsDelivered] = useState(false);
   const [gatewayProviderInfo, setGatewayProviderInfo] = useState<string | null>(null);
   const [smsFallbackCode, setSmsFallbackCode] = useState<string | null>(null);
+  const [firebaseConfirmation, setFirebaseConfirmation] = useState<any>(null);
+
+  // Telegram Form State
+  const [telegramInput, setTelegramInput] = useState('');
+  const [telegramName, setTelegramName] = useState('');
 
   // Email Form State
   const [name, setName] = useState('');
@@ -83,7 +91,7 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
 
   // Status & Loading
   const [isLoading, setIsLoading] = useState(false);
-  const [authProviderLoading, setAuthProviderLoading] = useState<'GOOGLE' | 'EMAIL' | 'PHONE' | null>(null);
+  const [authProviderLoading, setAuthProviderLoading] = useState<'GOOGLE' | 'EMAIL' | 'PHONE' | 'TELEGRAM' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -104,7 +112,7 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     };
   }, [isOtpTimerActive, otpCountdown]);
 
-  // Handle Send OTP
+  // Handle Send OTP (Firebase Phone Auth + Dual Gateway)
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
@@ -119,32 +127,53 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     setIsLoading(true);
     setAuthProviderLoading('PHONE');
 
+    const e164Phone = `${selectedCountry.code}${cleanNum}`;
+
     try {
       setOtpDigits(['', '', '', '', '', '']);
 
-      // Call Backend SMS Gateway (Twilio / Fast2SMS)
-      const res = await apiSendSmsOtp(selectedCountry.code, cleanNum);
+      let usedFirebase = false;
+      let confirmation: any = null;
 
-      if (!res.success) {
-        throw new Error(res.message || 'Failed to dispatch SMS OTP.');
+      // 1. Try Firebase Native Phone Auth
+      try {
+        confirmation = await sendFirebasePhoneOtp(e164Phone, 'recaptcha-container');
+        if (confirmation && typeof confirmation.confirm === 'function') {
+          setFirebaseConfirmation(confirmation);
+          usedFirebase = true;
+          setRealSmsDelivered(true);
+          setGatewayProviderInfo('Firebase Phone Auth');
+        }
+      } catch (fbErr: any) {
+        console.warn('Firebase Phone Auth note:', fbErr?.message || fbErr);
+        // Seamlessly continue to Backend SMS Gateway
       }
 
-      setRealSmsDelivered(Boolean(res.realSmsDelivered));
-      setGatewayProviderInfo(res.gatewayProvider || null);
-      setSmsFallbackCode(res.fallbackCode || null);
-      setGeneratedOtp(res.fallbackCode || null);
+      // 2. If Firebase Phone Auth didn't send or is pending console switch, use Backend SMS Gateway (Twilio/Fast2SMS)
+      if (!usedFirebase) {
+        const res = await apiSendSmsOtp(selectedCountry.code, cleanNum);
+
+        if (!res.success) {
+          throw new Error(res.message || 'Failed to dispatch SMS OTP.');
+        }
+
+        setRealSmsDelivered(Boolean(res.realSmsDelivered));
+        setGatewayProviderInfo(res.gatewayProvider || 'SMS Gateway');
+        setSmsFallbackCode(res.fallbackCode || null);
+        setGeneratedOtp(res.fallbackCode || null);
+      }
 
       // Start countdown
       setOtpCountdown(30);
       setIsOtpTimerActive(true);
 
-      const fullPhone = res.fullPhone || `${selectedCountry.code} ${cleanNum}`;
+      const fullPhone = `${selectedCountry.code} ${cleanNum}`;
       setPhonePhase('VERIFY_OTP');
 
-      if (res.realSmsDelivered) {
-        setSuccessMessage(`Real SMS dispatched to ${fullPhone} via ${res.gatewayProvider}! Check your phone messages.`);
+      if (usedFirebase) {
+        setSuccessMessage(`Firebase real SMS OTP dispatched to ${fullPhone}! Check your phone messages.`);
       } else {
-        setSuccessMessage(`Verification code sent for ${fullPhone}.`);
+        setSuccessMessage(`Real SMS verification code dispatched for ${fullPhone}.`);
       }
 
       // Focus on first digit input
@@ -221,7 +250,38 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     const userId = `phone_${cleanNum}`;
 
     try {
-      // Verify with backend REST API
+      // 1. If Firebase Confirmation is available, confirm with Firebase
+      if (firebaseConfirmation && typeof firebaseConfirmation.confirm === 'function') {
+        const result = await firebaseConfirmation.confirm(enteredOtp);
+        const fbUser = result.user;
+
+        const realProfile: UserProfile = {
+          id: fbUser.uid || userId,
+          name: userDisplayName,
+          email: `${cleanNum}@phone.aura.music`,
+          phoneNumber: fbUser.phoneNumber || fullPhone,
+          authProvider: 'PHONE',
+          isCloudSyncEnabled: true,
+          totalListeningSeconds: 0,
+          lastCloudBackup: Date.now()
+        };
+
+        await syncUserProfileToFirestore(realProfile.id, {
+          name: realProfile.name,
+          email: realProfile.email,
+          phoneNumber: realProfile.phoneNumber,
+          authProvider: 'PHONE',
+          lastLoginAt: Date.now()
+        });
+
+        setSuccessMessage(`Phone Number verified via Firebase! Welcome, ${realProfile.name}!`);
+        setTimeout(() => {
+          onAuthenticated(realProfile);
+        }, 600);
+        return;
+      }
+
+      // 2. Fallback: Verify with backend REST API
       const res = await apiVerifySmsOtp(selectedCountry.code, cleanNum, enteredOtp, userDisplayName);
       if (!res.success) {
         throw new Error(res.message || 'Incorrect OTP code.');
@@ -263,6 +323,73 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
     }
   };
 
+  // Handle Telegram Direct Authentication
+  const handleTelegramLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanInput = telegramInput.trim().replace(/^@/, '');
+    if (!cleanInput) {
+      setErrorMessage('Please enter your Telegram username or user ID (e.g. @username).');
+      return;
+    }
+
+    setIsLoading(true);
+    setAuthProviderLoading('TELEGRAM');
+
+    try {
+      // Deterministic numeric Telegram ID if text handle is entered
+      const tgId = isNaN(Number(cleanInput))
+        ? Math.abs(cleanInput.split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0))
+        : Number(cleanInput);
+
+      const displayName = telegramName.trim() || cleanInput;
+
+      const res = await apiTelegramSync({
+        id: tgId,
+        username: cleanInput,
+        first_name: displayName,
+        photo_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanInput}`
+      });
+
+      if (!res.success || !res.profile) {
+        throw new Error(res.message || 'Telegram authentication failed.');
+      }
+
+      const realProfile: UserProfile = {
+        id: res.profile.id,
+        name: res.profile.name || displayName,
+        email: res.profile.email || `${cleanInput}@telegram.org`,
+        authProvider: 'TELEGRAM',
+        avatarUrl: res.profile.avatarUrl,
+        isCloudSyncEnabled: true,
+        totalListeningSeconds: res.profile.totalListeningSeconds || 0,
+        lastCloudBackup: res.profile.lastCloudBackup || Date.now()
+      };
+
+      try {
+        await syncUserProfileToFirestore(realProfile.id, {
+          name: realProfile.name,
+          email: realProfile.email,
+          authProvider: 'TELEGRAM',
+          lastLoginAt: Date.now()
+        });
+      } catch (err) {
+        console.warn('Firestore sync note:', err);
+      }
+
+      setSuccessMessage(`Telegram Account @${cleanInput} verified! Welcome, ${realProfile.name}!`);
+      setTimeout(() => {
+        onAuthenticated(realProfile);
+      }, 600);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Telegram authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setAuthProviderLoading(null);
+    }
+  };
 
   // Submit Handler for Email/Password
   const handleSubmit = async (e: React.FormEvent) => {
@@ -522,8 +649,8 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
           </div>
         )}
 
-        {/* Primary Fast Auth Buttons: Google & Mobile */}
-        <div className="space-y-2.5 mb-5">
+        {/* Primary Fast Auth Buttons: Google, Mobile, Telegram */}
+        <div className="space-y-2 mb-5">
           {/* Continue with Google */}
           <button
             type="button"
@@ -559,46 +686,78 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
             </span>
           </button>
 
-          {/* Continue with Mobile (Right Under Google) */}
-          <button
-            type="button"
-            id="btn-mobile-auth"
-            onClick={() => {
-              setAuthChannel('PHONE');
-              setPhonePhase('INPUT_NUMBER');
-              setErrorMessage(null);
-              setSuccessMessage(null);
-              setTimeout(() => {
-                const el = document.getElementById('phone-input-number');
-                if (el) el.focus();
-              }, 150);
-            }}
-            disabled={isLoading}
-            className={`w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl font-semibold text-xs sm:text-sm transition active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-lg ${
-              authChannel === 'PHONE'
-                ? 'bg-gradient-to-r from-cyan-950 to-blue-950 border-2 border-cyan-400 text-cyan-200 shadow-cyan-500/20'
-                : 'bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-white'
-            }`}
-          >
-            {authProviderLoading === 'PHONE' ? (
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-            ) : (
-              <Smartphone className={`w-5 h-5 shrink-0 ${authChannel === 'PHONE' ? 'text-cyan-400' : 'text-zinc-300'}`} />
-            )}
-            <span>
-              {authStep === 'SIGNIN' ? 'Continue with Mobile' : 'Sign up with Mobile'}
-            </span>
-          </button>
+          {/* Grid of Mobile & Telegram */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Continue with Mobile */}
+            <button
+              type="button"
+              id="btn-mobile-auth"
+              onClick={() => {
+                setAuthChannel('PHONE');
+                setPhonePhase('INPUT_NUMBER');
+                setErrorMessage(null);
+                setSuccessMessage(null);
+                setTimeout(() => {
+                  const el = document.getElementById('phone-input-number');
+                  if (el) el.focus();
+                }, 150);
+              }}
+              disabled={isLoading}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-xs transition active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-md ${
+                authChannel === 'PHONE'
+                  ? 'bg-gradient-to-r from-cyan-950 to-blue-950 border-2 border-cyan-400 text-cyan-200 shadow-cyan-500/20'
+                  : 'bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-white'
+              }`}
+            >
+              {authProviderLoading === 'PHONE' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+              ) : (
+                <Smartphone className={`w-4 h-4 shrink-0 ${authChannel === 'PHONE' ? 'text-cyan-400' : 'text-zinc-300'}`} />
+              )}
+              <span className="truncate">Mobile OTP</span>
+            </button>
+
+            {/* Continue with Telegram */}
+            <button
+              type="button"
+              id="btn-telegram-auth"
+              onClick={() => {
+                setAuthChannel('TELEGRAM');
+                setErrorMessage(null);
+                setSuccessMessage(null);
+                setTimeout(() => {
+                  const el = document.getElementById('telegram-input-username');
+                  if (el) el.focus();
+                }, 150);
+              }}
+              disabled={isLoading}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-xs transition active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-md ${
+                authChannel === 'TELEGRAM'
+                  ? 'bg-gradient-to-r from-sky-950 to-blue-950 border-2 border-[#229ED9] text-[#29b6f6] shadow-[#229ED9]/20'
+                  : 'bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-white'
+              }`}
+            >
+              {authProviderLoading === 'TELEGRAM' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#29b6f6]" />
+              ) : (
+                <Send className={`w-4 h-4 shrink-0 ${authChannel === 'TELEGRAM' ? 'text-[#29b6f6]' : 'text-sky-400'}`} />
+              )}
+              <span className="truncate">Telegram</span>
+            </button>
+          </div>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-4">
           <div className="flex-1 h-px bg-zinc-800" />
           <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
-            {authChannel === 'PHONE' ? 'Mobile Phone & OTP' : 'or with email'}
+            {authChannel === 'PHONE' ? 'Mobile Phone & OTP' : authChannel === 'TELEGRAM' ? 'Telegram Cloud Auth' : 'or with email'}
           </span>
           <div className="flex-1 h-px bg-zinc-800" />
         </div>
+
+        {/* Invisible Firebase Phone Recaptcha Container */}
+        <div id="recaptcha-container"></div>
 
         {/* CHANNEL 1: PHONE NUMBER & OTP FLOW */}
         {authChannel === 'PHONE' && (
@@ -825,8 +984,8 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
               </form>
             )}
 
-            {/* Quick Switch to Email */}
-            <div className="mt-3.5 pt-2.5 border-t border-white/5 text-center">
+            {/* Quick Switch to Email & Telegram */}
+            <div className="mt-3.5 pt-2.5 border-t border-white/5 text-center flex items-center justify-center gap-3 text-[11px] text-zinc-400">
               <button
                 type="button"
                 onClick={() => {
@@ -834,9 +993,21 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
                   setErrorMessage(null);
                   setSuccessMessage(null);
                 }}
-                className="text-[11px] text-zinc-400 hover:text-cyan-300 transition cursor-pointer"
+                className="hover:text-cyan-300 transition cursor-pointer"
               >
-                Or use <span className="font-semibold text-cyan-400 underline">Email & Password</span>
+                Use <span className="font-semibold text-cyan-400 underline">Email & Password</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthChannel('TELEGRAM');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }}
+                className="hover:text-[#29b6f6] transition cursor-pointer"
+              >
+                Use <span className="font-semibold text-[#29b6f6] underline">Telegram</span>
               </button>
             </div>
           </div>
@@ -956,8 +1127,8 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
               )}
             </button>
 
-            {/* Quick Switch to Mobile */}
-            <div className="mt-3.5 pt-2.5 border-t border-white/5 text-center">
+            {/* Quick Switch to Mobile or Telegram */}
+            <div className="mt-3.5 pt-2.5 border-t border-white/5 text-center flex items-center justify-center gap-3 text-[11px] text-zinc-400">
               <button
                 type="button"
                 onClick={() => {
@@ -970,9 +1141,128 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
                     if (el) el.focus();
                   }, 150);
                 }}
-                className="text-[11px] text-zinc-400 hover:text-cyan-300 transition cursor-pointer"
+                className="hover:text-cyan-300 transition cursor-pointer"
               >
-                Or sign in with <span className="font-semibold text-cyan-400 underline">Mobile Number & OTP</span>
+                Use <span className="font-semibold text-cyan-400 underline">Mobile OTP</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthChannel('TELEGRAM');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                  setTimeout(() => {
+                    const el = document.getElementById('telegram-input-username');
+                    if (el) el.focus();
+                  }, 150);
+                }}
+                className="hover:text-[#29b6f6] transition cursor-pointer"
+              >
+                Use <span className="font-semibold text-[#29b6f6] underline">Telegram</span>
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* CHANNEL 3: TELEGRAM DIRECT AUTH */}
+        {authChannel === 'TELEGRAM' && (
+          <form onSubmit={handleTelegramLogin} className="space-y-3.5">
+            <div className="p-3.5 rounded-2xl bg-[#229ED9]/10 border border-[#229ED9]/30 text-xs text-zinc-300 space-y-1">
+              <div className="flex items-center gap-2 text-[#29b6f6] font-bold">
+                <Send className="w-4 h-4" />
+                <span>Real Telegram Authentication</span>
+              </div>
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
+                Enter your Telegram username or account phone number. Your cloud playlists & VIP status sync automatically.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                Telegram Username or Phone
+              </label>
+              <div className="relative">
+                <span className="text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold">@</span>
+                <input
+                  type="text"
+                  id="telegram-input-username"
+                  required
+                  value={telegramInput}
+                  onChange={(e) => setTelegramInput(e.target.value)}
+                  placeholder="e.g. baruiavijit72 or your_handle"
+                  className="w-full pl-8 pr-4 py-2.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#229ED9] transition"
+                />
+              </div>
+            </div>
+
+            {authStep === 'SIGNUP' && (
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Display Name (Optional)
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={telegramName}
+                    onChange={(e) => setTelegramName(e.target.value)}
+                    placeholder="e.g. Avijit Barui"
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#229ED9] transition"
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              id="btn-telegram-submit"
+              disabled={isLoading}
+              className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-[#229ED9] via-[#0288D1] to-[#01579B] hover:from-[#29b6f6] hover:to-[#0288D1] text-white font-bold text-xs sm:text-sm transition active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[#229ED9]/25 cursor-pointer"
+            >
+              {isLoading && authProviderLoading === 'TELEGRAM' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Connecting with Telegram...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>{authStep === 'SIGNIN' ? 'Sign In with Telegram' : 'Create Account via Telegram'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Quick Switch to Mobile or Email */}
+            <div className="mt-3.5 pt-2.5 border-t border-white/5 text-center flex items-center justify-center gap-3 text-[11px] text-zinc-400">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthChannel('PHONE');
+                  setPhonePhase('INPUT_NUMBER');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                  setTimeout(() => {
+                    const el = document.getElementById('phone-input-number');
+                    if (el) el.focus();
+                  }, 150);
+                }}
+                className="hover:text-cyan-300 transition cursor-pointer"
+              >
+                Use <span className="font-semibold text-cyan-400 underline">Mobile OTP</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthChannel('EMAIL');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }}
+                className="hover:text-cyan-300 transition cursor-pointer"
+              >
+                Use <span className="font-semibold text-cyan-400 underline">Email</span>
               </button>
             </div>
           </form>

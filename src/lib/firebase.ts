@@ -9,6 +9,9 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
   User 
 } from 'firebase/auth';
 import { 
@@ -189,6 +192,31 @@ export async function signUpWithEmail(email: string, pass: string, displayName?:
   });
 
   return user;
+}
+
+/**
+ * Firebase Phone Auth: Send Real SMS OTP via Firebase Telecom Service
+ */
+export async function sendFirebasePhoneOtp(
+  phoneNumberE164: string,
+  recaptchaContainerId: string = 'recaptcha-container'
+): Promise<ConfirmationResult> {
+  const windowWithRecaptcha = window as any;
+  if (!windowWithRecaptcha.recaptchaVerifier) {
+    windowWithRecaptcha.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+      size: 'invisible',
+      callback: () => {
+        // reCAPTCHA solved - allow signInWithPhoneNumber
+      },
+      'expired-callback': () => {
+        // Response expired. Ask user to solve reCAPTCHA again.
+      }
+    });
+  }
+
+  const appVerifier = windowWithRecaptcha.recaptchaVerifier;
+  const confirmationResult = await signInWithPhoneNumber(auth, phoneNumberE164, appVerifier);
+  return confirmationResult;
 }
 
 /**

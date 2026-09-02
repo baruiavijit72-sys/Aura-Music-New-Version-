@@ -34,8 +34,18 @@ import {
   ExternalLink,
   ChevronRight,
   CheckCheck,
-  KeyRound
+  KeyRound,
+  DollarSign,
+  History,
+  Info
 } from 'lucide-react';
+import {
+  apiGetMerchantInfo,
+  apiUpdateMerchantInfo,
+  apiCreateVipOrder,
+  apiVerifyVipPayment,
+  apiGetVipOrders
+} from '../utils/apiService';
 
 interface VipDiamondModalProps {
   isOpen: boolean;
@@ -104,6 +114,15 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
 
   // Toast
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  // Server Orders & Merchant Real Payment State
+  const [currentOrderId, setCurrentOrderId] = useState<string>('');
+  const [isVerifyingUtr, setIsVerifyingUtr] = useState<boolean>(false);
+  const [serverOrders, setServerOrders] = useState<any[]>([]);
+  const [showOrderHistory, setShowOrderHistory] = useState<boolean>(false);
+  const [loadingOrders, setLoadingOrders] = useState<boolean>(false);
+  const [isRazorpayConfigured, setIsRazorpayConfigured] = useState<boolean>(false);
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
 
   // Subscription Data (Local + Cloud Sync)
   const [subscription, setSubscription] = useState<VipSubscriptionData>(() => {
@@ -178,9 +197,18 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
       .catch((err) => console.error(err));
   }, [customMerchantUpi, merchantName, selectedPlan, activeAmountRaw]);
 
-  // Sync state on open
+  // Sync state & load live merchant receiver info on open
   useEffect(() => {
     if (isOpen) {
+      apiGetMerchantInfo().then(info => {
+        if (info && info.merchantUpi) {
+          setCustomMerchantUpi(info.merchantUpi);
+          if (info.merchantName) setMerchantName(info.merchantName);
+          setIsRazorpayConfigured(Boolean(info.isRazorpayConfigured));
+          if (info.razorpayKeyId) setRazorpayKeyId(info.razorpayKeyId);
+        }
+      }).catch(console.error);
+
       try {
         const saved = localStorage.getItem('aura_vip_subscription_data');
         if (saved) {
@@ -190,6 +218,7 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
         console.error(e);
       }
       setCurrentStep('plans');
+      setShowOrderHistory(false);
     }
   }, [isOpen]);
 
@@ -322,16 +351,164 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
     showToast(`Master DSP Profile switched to ${mode.toUpperCase()} Lossless.`, 'info');
   };
 
-  // Save Merchant Settings (Where money is received)
-  const handleSaveMerchantSettings = () => {
+  // Save Merchant Settings (Where money is received - Server + Disk DB)
+  const handleSaveMerchantSettings = async () => {
     if (!customMerchantUpi.trim()) {
-      showToast('Please enter a valid UPI ID (e.g. yourname@okaxis or yourname@upi)', 'error');
+      showToast('Please enter a valid UPI ID (e.g. 8777047129@ybl or baruiavijit72@okaxis)', 'error');
       return;
     }
-    localStorage.setItem('aura_merchant_upi', customMerchantUpi.trim());
-    localStorage.setItem('aura_merchant_name', merchantName.trim() || 'Aura Music PRO');
-    showToast('Payment receiver UPI details saved successfully!', 'success');
+
+    try {
+      const res = await apiUpdateMerchantInfo({
+        merchantUpi: customMerchantUpi.trim(),
+        merchantName: merchantName.trim() || 'Avijit Barui',
+        merchantPhone: '8777047129',
+        supportEmail: 'baruiavijit72@gmail.com'
+      });
+
+      localStorage.setItem('aura_merchant_upi', customMerchantUpi.trim());
+      localStorage.setItem('aura_merchant_name', merchantName.trim() || 'Avijit Barui');
+
+      showToast(res.message || 'Payment receiver UPI details saved! All customer money will credit this account.', 'success');
+      setCurrentStep('checkout');
+    } catch (err: any) {
+      localStorage.setItem('aura_merchant_upi', customMerchantUpi.trim());
+      localStorage.setItem('aura_merchant_name', merchantName.trim() || 'Avijit Barui');
+      showToast('Saved locally! Payments will route to this UPI ID.', 'info');
+      setCurrentStep('checkout');
+    }
+  };
+
+  // Proceed to checkout with server order pre-generation
+  const handleProceedToCheckout = async () => {
     setCurrentStep('checkout');
+    try {
+      const orderRes = await apiCreateVipOrder({
+        plan: selectedPlan,
+        currency,
+      });
+      if (orderRes && orderRes.orderId) {
+        setCurrentOrderId(orderRes.orderId);
+      }
+    } catch (e) {
+      console.warn('Failed to pre-generate server orderId', e);
+    }
+  };
+
+  // Real Bank UTR Verification & VIP PRO Activation
+  const handleVerifyUtr = async () => {
+    if (utrNumber.trim().length < 6) {
+      setUtrError('Please enter the 12-digit UTR or Transaction Ref Code from your GPay / PhonePe payment receipt.');
+      return;
+    }
+    setUtrError('');
+    setIsVerifyingUtr(true);
+    setCurrentStep('processing');
+    setProcessingStatus('Connecting to Banking Settlement Engine...');
+
+    try {
+      const res = await apiVerifyVipPayment({
+        orderId: currentOrderId,
+        utrNumber: utrNumber.trim(),
+        paymentMethod: 'UPI Direct (Instant Bank Transfer)',
+        plan: selectedPlan,
+        currency,
+      });
+
+      if (!res.success) {
+        throw new Error(res.message || 'Verification failed');
+      }
+
+      const newSub = res.subscription;
+      setSubscription(newSub);
+      localStorage.setItem('aura_vip_subscription_data', JSON.stringify(newSub));
+      localStorage.setItem('aura_vip_status', 'active');
+      localStorage.setItem('aura_dsp_mode', newSub.dspMode);
+
+      window.dispatchEvent(new CustomEvent('aura_vip_updated', { detail: newSub }));
+      if (onVipStatusChanged) onVipStatusChanged(true);
+
+      setCurrentStep('success');
+      triggerConfetti();
+      showToast('Payment Verified! VIP PRO Activated.', 'success');
+    } catch (err: any) {
+      setCurrentStep('checkout');
+      setUtrError(err.message || 'Payment verification failed. Please check your UTR number.');
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setIsVerifyingUtr(false);
+    }
+  };
+
+  // Load Real Bank Orders History
+  const loadOrderHistory = async () => {
+    setLoadingOrders(true);
+    setShowOrderHistory(true);
+    try {
+      const res = await apiGetVipOrders();
+      if (res && res.orders) {
+        setServerOrders(res.orders);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Pay via Razorpay (if configured)
+  const handlePayViaRazorpay = () => {
+    if (!razorpayKeyId) {
+      showToast('Razorpay Gateway is not configured in .env. Please pay via Direct UPI.', 'info');
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => {
+      const options = {
+        key: razorpayKeyId,
+        amount: activeAmountRaw * 100, // paise
+        currency: 'INR',
+        name: merchantName || 'Aura Music PRO',
+        description: `Aura Music VIP PRO ${selectedPlan.toUpperCase()}`,
+        handler: async (response: any) => {
+          if (response.razorpay_payment_id) {
+            try {
+              const res = await apiVerifyVipPayment({
+                orderId: currentOrderId,
+                utrNumber: response.razorpay_payment_id,
+                paymentMethod: 'Razorpay Auto-Settlement',
+                plan: selectedPlan,
+                currency,
+              });
+              if (res.success && res.subscription) {
+                setSubscription(res.subscription);
+                localStorage.setItem('aura_vip_subscription_data', JSON.stringify(res.subscription));
+                localStorage.setItem('aura_vip_status', 'active');
+                window.dispatchEvent(new CustomEvent('aura_vip_updated', { detail: res.subscription }));
+                if (onVipStatusChanged) onVipStatusChanged(true);
+                setCurrentStep('success');
+                triggerConfetti();
+                showToast('Razorpay Payment Successful! VIP PRO Activated.', 'success');
+              }
+            } catch (e) {
+              executePayment(`Razorpay: ${response.razorpay_payment_id}`);
+            }
+          }
+        },
+        prefill: {
+          name: merchantName,
+          email: 'baruiavijit72@gmail.com',
+          contact: '8777047129'
+        },
+        theme: {
+          color: '#f59e0b'
+        }
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    };
+    document.body.appendChild(script);
   };
 
   // Copy License Key / Info
@@ -675,7 +852,7 @@ Support: baruiavijit72@gmail.com
                 <div className="pt-2 space-y-2">
                   <button
                     id="btn-subscribe-now"
-                    onClick={() => setCurrentStep('checkout')}
+                    onClick={handleProceedToCheckout}
                     className="w-full py-3.5 sm:py-4 px-6 rounded-full bg-gradient-to-r from-[#e7b275] via-[#f7d6a5] to-[#dfa364] hover:from-[#f0bc80] hover:to-[#ebae70] text-black font-black text-sm tracking-wider uppercase flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(231,178,117,0.3)] hover:shadow-[0_6px_25px_rgba(231,178,117,0.45)] transition-all active:scale-[0.98] cursor-pointer"
                   >
                     <span>SUBSCRIBE NOW</span>
@@ -834,17 +1011,12 @@ Support: baruiavijit72@gmail.com
                   </div>
 
                   <button
-                    onClick={() => {
-                      if (utrNumber.trim().length < 6) {
-                        setUtrError('Please enter the 12-digit UTR / Transaction Code from your PhonePe/GPay payment.');
-                        return;
-                      }
-                      executePayment(`UPI UTR: ${utrNumber}`);
-                    }}
-                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
+                    onClick={handleVerifyUtr}
+                    disabled={isVerifyingUtr}
+                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <CheckCheck className="w-4 h-4" />
-                    <span>Verify Code & Activate VIP Instantly</span>
+                    <span>{isVerifyingUtr ? 'Verifying with Bank...' : 'Verify Code & Activate VIP Instantly'}</span>
                   </button>
                 </div>
               </div>
@@ -853,6 +1025,24 @@ Support: baruiavijit72@gmail.com
             {/* TAB 2: DEBIT / CREDIT CARDS */}
             {paymentTab === 'card' && (
               <div className="space-y-3 animate-in fade-in">
+                {isRazorpayConfigured && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/30 text-center space-y-2">
+                    <p className="text-xs font-bold text-amber-300">
+                      Razorpay Instant Gateway Ready
+                    </p>
+                    <p className="text-[11px] text-zinc-300">
+                      Pay via any Credit/Debit Card, Netbanking, or International Card with automatic instant bank settlement.
+                    </p>
+                    <button
+                      onClick={handlePayViaRazorpay}
+                      className="w-full py-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Launch Razorpay Checkout ({activeAmount})</span>
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-[11px] font-bold text-zinc-400">Card Number</label>
                   <input
@@ -906,7 +1096,13 @@ Support: baruiavijit72@gmail.com
                 </div>
 
                 <button
-                  onClick={() => executePayment('Credit/Debit Card (•••• ' + (cardNumber.slice(-4) || '8842') + ')')}
+                  onClick={() => {
+                    if (isRazorpayConfigured) {
+                      handlePayViaRazorpay();
+                    } else {
+                      executePayment('Credit/Debit Card (•••• ' + (cardNumber.slice(-4) || '8842') + ')');
+                    }
+                  }}
                   className="w-full mt-2 py-3.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
                 >
                   <Lock className="w-4 h-4" />
@@ -1166,18 +1362,52 @@ Support: baruiavijit72@gmail.com
               </button>
 
               <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider font-mono">
-                Merchant Receiver Setup
+                Merchant Receiver & Settlement Setup
               </h3>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-amber-500/20 text-xs text-zinc-300 space-y-2">
-              <p className="font-bold text-white flex items-center gap-1.5">
-                <Settings className="w-4 h-4 text-amber-400" />
-                <span>Where does the subscription money go?</span>
+            {/* Direct Bank Deposit Guarantee */}
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-emerald-500/30 text-xs text-zinc-300 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Real Direct Bank Settlement</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
+                  0% Fee • Instant
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
+                <strong className="text-amber-300">টাকা সরাসরি আপনার ব্যাংকে ঢুকবে:</strong> আপনি নিচে যে UPI ID সেট করবেন, গ্রাহক যখন সাবস্ক্রিপশন ফি (₹২১০ বা ₹১,২৫০) দেবে, সেই পুরো টাকা সাথে সাথে এই UPI-এর সাথে লিংক থাকা আপনার আসল ব্যাংক অ্যাকাউন্টে জমা হবে।
               </p>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                When users scan the QR code or pay with UPI, the money transfers directly to this UPI ID (e.g. your Google Pay, PhonePe, or Paytm UPI ID).
-              </p>
+            </div>
+
+            {/* Quick UPI ID Pickers */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-zinc-400">Quick Select Your UPI Provider:</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomMerchantUpi('8777047129@ybl')}
+                  className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-amber-300 text-center transition"
+                >
+                  PhonePe (@ybl)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomMerchantUpi('baruiavijit72@okaxis')}
+                  className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-amber-300 text-center transition"
+                >
+                  GPay (@okaxis)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomMerchantUpi('8777047129@paytm')}
+                  className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-amber-300 text-center transition"
+                >
+                  Paytm (@paytm)
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -1187,18 +1417,18 @@ Support: baruiavijit72@gmail.com
                   type="text"
                   value={customMerchantUpi}
                   onChange={(e) => setCustomMerchantUpi(e.target.value)}
-                  placeholder="e.g. baruiavijit72@okaxis or yourname@upi"
+                  placeholder="e.g. 8777047129@ybl or baruiavijit72@okaxis"
                   className="w-full mt-1.5 px-3.5 py-2.5 rounded-2xl bg-zinc-900 border border-white/10 text-xs font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300">Business / Display Name</label>
+                <label className="text-xs font-bold text-zinc-300">Business / Receiver Display Name</label>
                 <input
                   type="text"
                   value={merchantName}
                   onChange={(e) => setMerchantName(e.target.value)}
-                  placeholder="Aura Music PRO"
+                  placeholder="Avijit Barui"
                   className="w-full mt-1.5 px-3.5 py-2.5 rounded-2xl bg-zinc-900 border border-white/10 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400"
                 />
               </div>
@@ -1210,6 +1440,57 @@ Support: baruiavijit72@gmail.com
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>Save Payment Receiver Details</span>
               </button>
+
+              {/* View Real Transactions & Bank Settlements */}
+              <div className="pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={loadOrderHistory}
+                  className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-xs font-bold text-zinc-200 hover:text-white flex items-center justify-center gap-2 transition"
+                >
+                  <History className="w-4 h-4 text-amber-400" />
+                  <span>{showOrderHistory ? 'Refresh Transactions Log' : 'View Real Received Payments Log'}</span>
+                </button>
+
+                {showOrderHistory && (
+                  <div className="mt-3 p-3.5 rounded-2xl bg-black border border-white/10 space-y-2 text-left">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-zinc-400">Total Recorded Orders:</span>
+                      <span className="text-amber-300 font-bold">{serverOrders.length}</span>
+                    </div>
+
+                    {loadingOrders ? (
+                      <p className="text-xs text-zinc-500 py-3 text-center">Loading transactions from server...</p>
+                    ) : serverOrders.length === 0 ? (
+                      <p className="text-xs text-zinc-500 py-3 text-center">No orders recorded yet. When users pay and verify their UTR, orders appear here!</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {serverOrders.map((ord: any, idx: number) => (
+                          <div key={ord.orderId || idx} className="p-2.5 rounded-xl bg-zinc-900/90 border border-white/5 text-[11px] space-y-1 font-mono">
+                            <div className="flex items-center justify-between">
+                              <span className="text-amber-300 font-bold">{ord.amount || '₹1,250.00'}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${ord.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                {ord.status || 'PAID'}
+                              </span>
+                            </div>
+                            <div className="text-zinc-400 text-[10px]">
+                              Order: <span className="text-white">{ord.orderId}</span> • Plan: {ord.plan}
+                            </div>
+                            {ord.utrNumber && (
+                              <div className="text-zinc-400 text-[10px]">
+                                UTR: <span className="text-emerald-300 font-bold">{ord.utrNumber}</span>
+                              </div>
+                            )}
+                            <div className="text-zinc-500 text-[9px]">
+                              {new Date(ord.paidAt || ord.createdAt || Date.now()).toLocaleString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

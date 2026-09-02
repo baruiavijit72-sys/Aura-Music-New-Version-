@@ -108,9 +108,9 @@ export async function apiLogin(email: string, password: string): Promise<AuthRes
   return data;
 }
 
-// 4. OAuth / Phone Auth Token Sync (Google / Phone / Facebook)
+// 4. OAuth / Phone Auth Token Sync (Google / Phone / Facebook / Telegram)
 export async function apiOAuthSync(payload: {
-  provider: 'GOOGLE' | 'FACEBOOK' | 'PHONE';
+  provider: 'GOOGLE' | 'FACEBOOK' | 'PHONE' | 'TELEGRAM';
   email: string;
   name?: string;
   phoneNumber?: string;
@@ -121,6 +121,28 @@ export async function apiOAuthSync(payload: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+  const data: AuthResponse = await res.json();
+  if (data.success && data.token) {
+    saveJwtToken(data.token);
+  }
+  return data;
+}
+
+// 4.0 Telegram Direct User Sync API
+export async function apiTelegramSync(telegramUser: {
+  id: number | string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date?: number;
+  hash?: string;
+}): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/telegram-sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(telegramUser),
   });
   const data: AuthResponse = await res.json();
   if (data.success && data.token) {
@@ -220,3 +242,88 @@ export async function apiRestoreBackup(): Promise<RestoreResponse> {
 
   return await res.json();
 }
+
+// 8. VIP & Real Payment Gateway API
+export interface MerchantInfoResponse {
+  success: boolean;
+  merchantUpi: string;
+  merchantName: string;
+  merchantPhone: string;
+  supportEmail: string;
+  isRazorpayConfigured?: boolean;
+  razorpayKeyId?: string;
+  isStripeConfigured?: boolean;
+  stripePublishableKey?: string;
+  pricing?: {
+    INR: { monthly: string; monthlyRaw: number; yearly: string; yearlyRaw: number };
+    USD: { monthly: string; monthlyRaw: number; yearly: string; yearlyRaw: number };
+  };
+}
+
+export async function apiGetMerchantInfo(): Promise<MerchantInfoResponse> {
+  try {
+    const res = await fetch(`${API_BASE}/vip/merchant-info`);
+    return await res.json();
+  } catch (err) {
+    return {
+      success: true,
+      merchantUpi: '8777047129@ybl',
+      merchantName: 'Avijit Barui',
+      merchantPhone: '8777047129',
+      supportEmail: 'baruiavijit72@gmail.com'
+    };
+  }
+}
+
+export async function apiUpdateMerchantInfo(payload: {
+  merchantUpi: string;
+  merchantName?: string;
+  merchantPhone?: string;
+  supportEmail?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/vip/update-merchant`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+export async function apiCreateVipOrder(payload: {
+  plan: 'monthly' | 'yearly';
+  currency: 'INR' | 'USD';
+  userEmail?: string;
+  userName?: string;
+  userId?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/vip/create-order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+export async function apiVerifyVipPayment(payload: {
+  orderId?: string;
+  utrNumber: string;
+  paymentMethod?: string;
+  plan: 'monthly' | 'yearly';
+  currency?: 'INR' | 'USD';
+  userEmail?: string;
+  userName?: string;
+  userId?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/vip/verify-payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+export async function apiGetVipOrders(): Promise<any> {
+  const res = await fetch(`${API_BASE}/vip/orders`);
+  return await res.json();
+}
+

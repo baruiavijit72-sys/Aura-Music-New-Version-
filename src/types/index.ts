@@ -83,7 +83,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phoneNumber?: string;
-  authProvider: 'GOOGLE' | 'FACEBOOK' | 'EMAIL' | 'PHONE' | 'GUEST';
+  authProvider: 'GOOGLE' | 'FACEBOOK' | 'EMAIL' | 'PHONE' | 'TELEGRAM' | 'GUEST';
   avatarUrl?: string;
   isCloudSyncEnabled: boolean;
   lastCloudBackup?: number;
