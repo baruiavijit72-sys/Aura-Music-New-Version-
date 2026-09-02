@@ -204,6 +204,7 @@ export async function logOut(): Promise<void> {
 export async function syncUserProfileToFirestore(userId: string, data: Partial<{
   name: string;
   email: string;
+  phoneNumber: string;
   photoURL: string;
   authProvider: string;
   lastCloudBackup: number;

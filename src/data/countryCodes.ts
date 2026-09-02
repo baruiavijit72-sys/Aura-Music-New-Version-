@@ -1,0 +1,110 @@
+export interface CountryCodeItem {
+  code: string;
+  flag: string;
+  name: string;
+  iso: string;
+}
+
+export const ALL_COUNTRY_CODES: CountryCodeItem[] = [
+  // South Asia & Asia-Pacific
+  { code: '+91', flag: '🇮🇳', name: 'India', iso: 'IN' },
+  { code: '+880', flag: '🇧🇩', name: 'Bangladesh', iso: 'BD' },
+  { code: '+92', flag: '🇵🇰', name: 'Pakistan', iso: 'PK' },
+  { code: '+977', flag: '🇳🇵', name: 'Nepal', iso: 'NP' },
+  { code: '+94', flag: '🇱🇰', name: 'Sri Lanka', iso: 'LK' },
+  { code: '+975', flag: '🇧🇹', name: 'Bhutan', iso: 'BT' },
+  { code: '+960', flag: '🇲🇻', name: 'Maldives', iso: 'MV' },
+  { code: '+95', flag: '🇲🇲', name: 'Myanmar', iso: 'MM' },
+  { code: '+65', flag: '🇸🇬', name: 'Singapore', iso: 'SG' },
+  { code: '+60', flag: '🇲🇾', name: 'Malaysia', iso: 'MY' },
+  { code: '+62', flag: '🇮🇩', name: 'Indonesia', iso: 'ID' },
+  { code: '+63', flag: '🇵🇭', name: 'Philippines', iso: 'PH' },
+  { code: '+66', flag: '🇹🇭', name: 'Thailand', iso: 'TH' },
+  { code: '+84', flag: '🇻🇳', name: 'Vietnam', iso: 'VN' },
+  { code: '+81', flag: '🇯🇵', name: 'Japan', iso: 'JP' },
+  { code: '+82', flag: '🇰🇷', name: 'South Korea', iso: 'KR' },
+  { code: '+86', flag: '🇨🇳', name: 'China', iso: 'CN' },
+  { code: '+886', flag: '🇹🇼', name: 'Taiwan', iso: 'TW' },
+  { code: '+852', flag: '🇭🇰', name: 'Hong Kong', iso: 'HK' },
+  { code: '+61', flag: '🇦🇺', name: 'Australia', iso: 'AU' },
+  { code: '+64', flag: '🇳🇿', name: 'New Zealand', iso: 'NZ' },
+
+  // Middle East
+  { code: '+971', flag: '🇦🇪', name: 'United Arab Emirates', iso: 'AE' },
+  { code: '+966', flag: '🇸🇦', name: 'Saudi Arabia', iso: 'SA' },
+  { code: '+974', flag: '🇶🇦', name: 'Qatar', iso: 'QA' },
+  { code: '+968', flag: '🇴🇲', name: 'Oman', iso: 'OM' },
+  { code: '+965', flag: '🇰🇼', name: 'Kuwait', iso: 'KW' },
+  { code: '+973', flag: '🇧🇭', name: 'Bahrain', iso: 'BH' },
+  { code: '+962', flag: '🇯🇴', name: 'Jordan', iso: 'JO' },
+  { code: '+961', flag: '🇱🇧', name: 'Lebanon', iso: 'LB' },
+  { code: '+964', flag: '🇮🇶', name: 'Iraq', iso: 'IQ' },
+  { code: '+98', flag: '🇮🇷', name: 'Iran', iso: 'IR' },
+  { code: '+972', flag: '🇮🇱', name: 'Israel', iso: 'IL' },
+  { code: '+90', flag: '🇹🇷', name: 'Turkey', iso: 'TR' },
+
+  // Americas
+  { code: '+1', flag: '🇺🇸', name: 'United States', iso: 'US' },
+  { code: '+1', flag: '🇨🇦', name: 'Canada', iso: 'CA' },
+  { code: '+52', flag: '🇲🇽', name: 'Mexico', iso: 'MX' },
+  { code: '+55', flag: '🇧🇷', name: 'Brazil', iso: 'BR' },
+  { code: '+54', flag: '🇦🇷', name: 'Argentina', iso: 'AR' },
+  { code: '+57', flag: '🇨🇴', name: 'Colombia', iso: 'CO' },
+  { code: '+56', flag: '🇨🇱', name: 'Chile', iso: 'CL' },
+  { code: '+51', flag: '🇵🇪', name: 'Peru', iso: 'PE' },
+  { code: '+58', flag: '🇻🇪', name: 'Venezuela', iso: 'VE' },
+  { code: '+593', flag: '🇪🇨', name: 'Ecuador', iso: 'EC' },
+  { code: '+502', flag: '🇬🇹', name: 'Guatemala', iso: 'GT' },
+  { code: '+506', flag: '🇨🇷', name: 'Costa Rica', iso: 'CR' },
+  { code: '+507', flag: '🇵🇦', name: 'Panama', iso: 'PA' },
+  { code: '+1809', flag: '🇩🇴', name: 'Dominican Republic', iso: 'DO' },
+  { code: '+1876', flag: '🇯🇲', name: 'Jamaica', iso: 'JM' },
+
+  // Europe
+  { code: '+44', flag: '🇬🇧', name: 'United Kingdom', iso: 'GB' },
+  { code: '+49', flag: '🇩🇪', name: 'Germany', iso: 'DE' },
+  { code: '+33', flag: '🇫🇷', name: 'France', iso: 'FR' },
+  { code: '+39', flag: '🇮🇹', name: 'Italy', iso: 'IT' },
+  { code: '+34', flag: '🇪🇸', name: 'Spain', iso: 'ES' },
+  { code: '+31', flag: '🇳🇱', name: 'Netherlands', iso: 'NL' },
+  { code: '+41', flag: '🇨🇭', name: 'Switzerland', iso: 'CH' },
+  { code: '+46', flag: '🇸🇪', name: 'Sweden', iso: 'SE' },
+  { code: '+47', flag: '🇳🇴', name: 'Norway', iso: 'NO' },
+  { code: '+45', flag: '🇩🇰', name: 'Denmark', iso: 'DK' },
+  { code: '+358', flag: '🇫🇮', name: 'Finland', iso: 'FI' },
+  { code: '+353', flag: '🇮🇪', name: 'Ireland', iso: 'IE' },
+  { code: '+32', flag: '🇧🇪', name: 'Belgium', iso: 'BE' },
+  { code: '+43', flag: '🇦🇹', name: 'Austria', iso: 'AT' },
+  { code: '+351', flag: '🇵🇹', name: 'Portugal', iso: 'PT' },
+  { code: '+30', flag: '🇬🇷', name: 'Greece', iso: 'GR' },
+  { code: '+48', flag: '🇵🇱', name: 'Poland', iso: 'PL' },
+  { code: '+420', flag: '🇨🇿', name: 'Czech Republic', iso: 'CZ' },
+  { code: '+36', flag: '🇭🇺', name: 'Hungary', iso: 'HU' },
+  { code: '+40', flag: '🇷🇴', name: 'Romania', iso: 'RO' },
+  { code: '+380', flag: '🇺🇦', name: 'Ukraine', iso: 'UA' },
+  { code: '+7', flag: '🇷🇺', name: 'Russia', iso: 'RU' },
+
+  // Africa
+  { code: '+20', flag: '🇪🇬', name: 'Egypt', iso: 'EG' },
+  { code: '+27', flag: '🇿🇦', name: 'South Africa', iso: 'ZA' },
+  { code: '+234', flag: '🇳🇬', name: 'Nigeria', iso: 'NG' },
+  { code: '+254', flag: '🇰🇪', name: 'Kenya', iso: 'KE' },
+  { code: '+233', flag: '🇬🇭', name: 'Ghana', iso: 'GH' },
+  { code: '+212', flag: '🇲🇦', name: 'Morocco', iso: 'MA' },
+  { code: '+213', flag: '🇩🇿', name: 'Algeria', iso: 'DZ' },
+  { code: '+216', flag: '🇹🇳', name: 'Tunisia', iso: 'TN' },
+  { code: '+251', flag: '🇪🇹', name: 'Ethiopia', iso: 'ET' },
+  { code: '+255', flag: '🇹🇿', name: 'Tanzania', iso: 'TZ' },
+  { code: '+256', flag: '🇺🇬', name: 'Uganda', iso: 'UG' },
+  { code: '+260', flag: '🇿🇲', name: 'Zambia', iso: 'ZM' },
+  { code: '+263', flag: '🇿🇼', name: 'Zimbabwe', iso: 'ZW' },
+  { code: '+230', flag: '🇲🇺', name: 'Mauritius', iso: 'MU' },
+
+  // Central Asia & Others
+  { code: '+7', flag: '🇰🇿', name: 'Kazakhstan', iso: 'KZ' },
+  { code: '+998', flag: '🇺🇿', name: 'Uzbekistan', iso: 'UZ' },
+  { code: '+994', flag: '🇦🇿', name: 'Azerbaijan', iso: 'AZ' },
+  { code: '+995', flag: '🇬🇪', name: 'Georgia', iso: 'GE' },
+  { code: '+374', flag: '🇦🇲', name: 'Armenia', iso: 'AM' },
+  { code: '+93', flag: '🇦🇫', name: 'Afghanistan', iso: 'AF' }
+];

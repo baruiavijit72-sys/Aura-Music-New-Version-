@@ -53,12 +53,14 @@ export const loadStoredTracks = (): Track[] => {
         return !isDemoId && !isDemoUrl;
       });
 
-      return userOnly;
+      if (userOnly.length > 0) {
+        return userOnly;
+      }
     }
   } catch (e) {
     console.error('Failed to load stored tracks', e);
   }
-  return [];
+  return INITIAL_TRACKS;
 };
 
 export const saveStoredTracks = (tracks: Track[]) => {
@@ -74,19 +76,20 @@ export const loadStoredPlaylists = (): Playlist[] => {
     const raw = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
     if (raw) {
       const parsed: Playlist[] = JSON.parse(raw);
-      // Filter out any legacy mock playlists or demo track IDs from stored playlists
       const cleanPlaylists = parsed
         .filter(pl => pl && pl.id && !['pl-custom-1'].includes(pl.id))
         .map(pl => ({
           ...pl,
           trackIds: (pl.trackIds || []).filter(id => !/^track-\d+$/.test(id))
         }));
-      return cleanPlaylists;
+      if (cleanPlaylists.length > 0) {
+        return cleanPlaylists;
+      }
     }
   } catch (e) {
     console.error('Failed to load playlists', e);
   }
-  return [];
+  return INITIAL_PLAYLISTS;
 };
 
 export const saveStoredPlaylists = (playlists: Playlist[]) => {

@@ -1,0 +1,34 @@
+{
+  "baruiavijit72@gmail.com": {
+    "id": "JTbQBg3INZdsSgbqYhaCDyIJwkH3",
+    "name": "Avijit Barui",
+    "email": "baruiavijit72@gmail.com",
+    "passwordHash": "$2b$10$yJcRJoIPdOYSBY48AhJVx.b.LtI.HwV5uRdN1vIxJyhMat0IeU4ea",
+    "authProvider": "GOOGLE",
+    "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLuzO3szUmx9o-U6f6kZbwyQBy5qwS50jQ1IBCkx8b4VutYaw=s96-c",
+    "createdAt": 1788329634441,
+    "totalListeningSeconds": 0,
+    "lastCloudBackup": 1788329634441
+  },
+  "8777047129@phone.aura.music": {
+    "id": "phone_8777047129",
+    "name": "User 7129",
+    "email": "8777047129@phone.aura.music",
+    "passwordHash": "$2b$10$XC4NsqYkgKAktdLIXRX5NO7CxkN1CfhP30xGe8LcYUFYHMlXcLFoa",
+    "authProvider": "FACEBOOK",
+    "createdAt": 1788330951450,
+    "totalListeningSeconds": 0,
+    "lastCloudBackup": 1788330951450
+  },
+  "phone_8777047129@auramusic.local": {
+    "id": "phone_8777047129",
+    "name": "Avijit Barui",
+    "email": "phone_8777047129@auramusic.local",
+    "phoneNumber": "+918777047129",
+    "passwordHash": "$2b$10$t85uq.uWbxqdYkcgU5akW.F04sswYGLi6D3xoobP4mIjH/y2I/Qi6",
+    "authProvider": "PHONE",
+    "createdAt": 1788331904500,
+    "totalListeningSeconds": 0,
+    "lastCloudBackup": 1788331904500
+  }
+}

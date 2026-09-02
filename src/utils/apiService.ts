@@ -10,7 +10,8 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
-    authProvider: 'EMAIL' | 'GOOGLE' | 'FACEBOOK' | 'GUEST';
+    phoneNumber?: string;
+    authProvider: 'EMAIL' | 'GOOGLE' | 'FACEBOOK' | 'PHONE' | 'GUEST';
     avatarUrl?: string;
     isCloudSyncEnabled: boolean;
     totalListeningSeconds: number;
@@ -107,11 +108,12 @@ export async function apiLogin(email: string, password: string): Promise<AuthRes
   return data;
 }
 
-// 4. OAuth 2.0 Token Sync (Google / Facebook)
+// 4. OAuth / Phone Auth Token Sync (Google / Phone / Facebook)
 export async function apiOAuthSync(payload: {
-  provider: 'GOOGLE' | 'FACEBOOK';
+  provider: 'GOOGLE' | 'FACEBOOK' | 'PHONE';
   email: string;
   name?: string;
+  phoneNumber?: string;
   avatarUrl?: string;
   providerUid?: string;
 }): Promise<AuthResponse> {
@@ -126,6 +128,42 @@ export async function apiOAuthSync(payload: {
   }
   return data;
 }
+
+// 4.1 Real SMS OTP Dispatch API
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  fullPhone?: string;
+  realSmsDelivered?: boolean;
+  gatewayProvider?: string;
+  deliveryDetails?: string;
+  fallbackCode?: string;
+  expiresInSeconds?: number;
+}
+
+export async function apiSendSmsOtp(countryCode: string, phoneNumber: string): Promise<SendOtpResponse> {
+  const res = await fetch(`${API_BASE}/auth/send-sms-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ countryCode, phoneNumber }),
+  });
+  return await res.json();
+}
+
+// 4.2 Real SMS OTP Verification API
+export async function apiVerifySmsOtp(countryCode: string, phoneNumber: string, code: string, name?: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/verify-sms-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ countryCode, phoneNumber, code, name }),
+  });
+  const data: AuthResponse = await res.json();
+  if (data.success && data.token) {
+    saveJwtToken(data.token);
+  }
+  return data;
+}
+
 
 // 5. Get Current User via JWT Token
 export async function apiGetMe(): Promise<AuthResponse> {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   Music, 
   Disc, 
@@ -24,12 +24,18 @@ import {
   FolderOpen, 
   Radio,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ListMusic
 } from 'lucide-react';
 import { Track, Playlist } from '../types';
 import { downloadTrackToDevice, shareTrackViaNativeOS } from '../utils/audioTransfer';
 import { AUDIO_ACCEPT_STRING, convertFileToTrack, isAudioFile } from '../utils/fileScanner';
 import { FolderScannerModal } from '../components/FolderScannerModal';
+import { AlphabetScroller } from '../components/AlphabetScroller';
+import { FoldersBrowser } from '../components/FoldersBrowser';
+import { AlbumsBrowser } from '../components/AlbumsBrowser';
+import { ArtistsBrowser } from '../components/ArtistsBrowser';
+import { GenresBrowser } from '../components/GenresBrowser';
 import { useTranslation } from '../i18n/LanguageContext';
 
 interface LibraryViewProps {
@@ -45,12 +51,25 @@ interface LibraryViewProps {
   onDeleteTrack: (trackId: string) => void;
   onImportTrack: (newTrack: Track, blob?: Blob | File) => void;
   onImportMultipleTracks?: (newTracks: Track[], itemsWithBlobs?: { track: Track; blob?: Blob | File }[]) => void;
+  onSwitchToPlaylists?: () => void;
+  onSelectPlaylist?: (playlist: Playlist) => void;
 }
 
-type LibraryCategory = 'tracks' | 'albums' | 'artists' | 'genres' | 'folders' | 'years';
+type LibraryCategory = 'tracks' | 'playlists' | 'albums' | 'artists' | 'genres' | 'folders' | 'years';
 type SourceFilter = 'ALL' | 'LOCAL' | 'RECEIVED' | 'IMPORTED';
 type SortField = 'title' | 'artist' | 'duration' | 'year' | 'playCount';
 type StorageDriveFilter = 'ALL' | 'INTERNAL' | 'SDCARD' | 'TRANSFERS';
+
+export const getTrackIndexLetter = (text: string): string => {
+  if (!text) return '#';
+  const cleaned = text.replace(/^["'|#(\[\{\s\-_•*~`!@$%^&+=]+/i, '').trim();
+  if (!cleaned) return '#';
+  const firstChar = cleaned.charAt(0).toUpperCase();
+  if (/[A-Z]/.test(firstChar)) {
+    return firstChar;
+  }
+  return '#';
+};
 
 export const LibraryView: React.FC<LibraryViewProps> = ({
   tracks,
@@ -65,6 +84,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onDeleteTrack,
   onImportTrack,
   onImportMultipleTracks,
+  onSwitchToPlaylists,
+  onSelectPlaylist,
 }) => {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<LibraryCategory>('tracks');
@@ -84,6 +105,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [storageDriveFilter, setStorageDriveFilter] = useState<StorageDriveFilter>('ALL');
   const [folderSearchTerm, setFolderSearchTerm] = useState('');
   const [scanNotification, setScanNotification] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null);
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderDirectoryInputRef = useRef<HTMLInputElement | null>(null);
@@ -119,6 +141,75 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     else if (sortField === 'playCount') cmp = a.playCount - b.playCount;
     return sortAsc ? cmp : -cmp;
   });
+
+  // Calculate available letters and letter to first track id map
+  const availableLetters = useMemo(() => {
+    const set = new Set<string>();
+    filteredTracks.forEach(t => {
+      const letter = getTrackIndexLetter(sortField === 'artist' ? t.artist : t.title);
+      set.add(letter);
+    });
+    return set;
+  }, [filteredTracks, sortField]);
+
+  const letterToFirstTrackId = useMemo(() => {
+    const map = new Map<string, string>();
+    filteredTracks.forEach(t => {
+      const letter = getTrackIndexLetter(sortField === 'artist' ? t.artist : t.title);
+      if (!map.has(letter)) {
+        map.set(letter, t.id);
+      }
+    });
+    return map;
+  }, [filteredTracks, sortField]);
+
+  // Jump to letter in tracks list
+  const handleSelectLetter = (letter: string) => {
+    setActiveLetter(letter);
+    if (letter === '@') {
+      handleScrollToTop();
+      return;
+    }
+
+    // 1. Direct section header lookup
+    const secEl = document.getElementById(`letter-section-${letter}`);
+    if (secEl) {
+      secEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    // 2. Direct track id lookup
+    const trackId = letterToFirstTrackId.get(letter);
+    if (trackId) {
+      const trackEl = document.getElementById(`track-item-${trackId}`);
+      if (trackEl) {
+        trackEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+    }
+
+    // 3. Fallback to next alphabetical letter available
+    const allAvailable = Array.from(availableLetters).sort();
+    const nextLetter = allAvailable.find(l => l >= letter);
+    if (nextLetter) {
+      const fallbackTrackId = letterToFirstTrackId.get(nextLetter);
+      if (fallbackTrackId) {
+        const fallbackEl = document.getElementById(`track-item-${fallbackTrackId}`);
+        if (fallbackEl) {
+          fallbackEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  };
+
+  const handleScrollToTop = () => {
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Groupings for categories
   const albums = Array.from(new Set(tracks.map(t => t.album || 'Unknown Album')));
@@ -252,6 +343,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   };
 
   const handleCategoryChange = (category: LibraryCategory) => {
+    if (category === 'playlists' && onSwitchToPlaylists) {
+      onSwitchToPlaylists();
+      return;
+    }
     setActiveCategory(category);
     setSelectedFolder(null);
     setSelectedAlbum(null);
@@ -362,6 +457,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         {([
           { key: 'tracks', label: t.library.tracks, icon: Music },
+          { key: 'playlists', label: 'Playlists', icon: ListMusic },
           { key: 'albums', label: t.library.albums, icon: Disc },
           { key: 'artists', label: t.library.artists, icon: User },
           { key: 'genres', label: t.library.genres, icon: Radio },
@@ -447,7 +543,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
       {/* -------------------- TRACKS VIEW -------------------- */}
       {activeCategory === 'tracks' && (
-        <div className="space-y-1.5">
+        <div className="relative">
           {filteredTracks.length === 0 ? (
             <div className="p-8 text-center bg-zinc-900/40 rounded-3xl border border-white/5 space-y-3">
               <Music className="w-10 h-10 text-zinc-500 mx-auto" />
@@ -485,774 +581,292 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               )}
             </div>
           ) : (
-            filteredTracks.map((track) => (
-              <div
-                key={track.id}
-                className="group relative flex items-center justify-between p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/5 hover:border-indigo-500/30 transition shadow-sm"
-              >
-                {/* Left Play Area */}
-                <div
-                  onClick={() => onPlayTrack(track)}
-                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer pr-2"
-                >
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow relative overflow-hidden flex-shrink-0 group-hover:scale-105 transition"
-                    style={{
-                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
-                    }}
-                  >
-                    <Play className="w-5 h-5 fill-white text-white drop-shadow" />
-                  </div>
+            <div className="flex items-start gap-2 sm:gap-3">
+              {/* Songs List */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                {filteredTracks.map((track, idx) => {
+                  const currentLetter = getTrackIndexLetter(sortField === 'artist' ? track.artist : track.title);
+                  const prevLetter = idx > 0 ? getTrackIndexLetter(sortField === 'artist' ? filteredTracks[idx - 1].artist : filteredTracks[idx - 1].title) : null;
+                  const isNewLetterSection = (sortField === 'title' || sortField === 'artist') && (idx === 0 || currentLetter !== prevLetter);
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-indigo-300 transition">
-                        {track.title}
-                      </p>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 border border-white/10 flex-shrink-0">
-                        {track.format}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 truncate mt-0.5 font-medium">
-                      {track.artist} • {track.album} • {track.genre}
-                    </p>
-                  </div>
-                </div>
+                  return (
+                    <React.Fragment key={track.id}>
+                      {/* Section Letter Sticky Divider */}
+                      {isNewLetterSection && (
+                        <div
+                          id={`letter-section-${currentLetter}`}
+                          className="sticky top-0 z-10 pt-2 pb-1.5 bg-black/85 backdrop-blur-md flex items-center gap-2.5 transition-all"
+                        >
+                          <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-black text-xs flex items-center justify-center font-['Syne',sans-serif] shadow-sm shadow-cyan-500/20">
+                            {currentLetter}
+                          </div>
+                          <div className="h-px bg-gradient-to-r from-cyan-500/30 via-white/10 to-transparent flex-1" />
+                        </div>
+                      )}
 
-                {/* Right Metadata & Options Menu Button */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs font-mono text-zinc-500 hidden sm:inline">
-                    {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
-                  </span>
+                      <div
+                        id={`track-item-${track.id}`}
+                        className="group relative flex items-center justify-between p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/90 border border-white/5 hover:border-cyan-500/30 transition duration-200 shadow-sm hover:shadow-cyan-500/5 backdrop-blur-sm"
+                      >
+                        {/* Left Play Area */}
+                        <div
+                          onClick={() => onPlayTrack(track)}
+                          className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer pr-2"
+                        >
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md relative overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform duration-200 border border-white/10"
+                            style={{
+                              background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                            }}
+                          >
+                            {track.coverUrl ? (
+                              <img
+                                src={track.coverUrl}
+                                alt={track.title}
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <Music className="w-5 h-5 text-white/80" />
+                            )}
+                            {/* Hover Play Overlay */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+                              <div className="w-7 h-7 rounded-full bg-cyan-400 text-black flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                                <Play className="w-3.5 h-3.5 fill-black translate-x-0.5" />
+                              </div>
+                            </div>
+                          </div>
 
-                  <button
-                    onClick={() => setActiveMenuTrackId(activeMenuTrackId === track.id ? null : track.id)}
-                    className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-cyan-300 transition-colors font-['Syne',sans-serif]">
+                                {track.title}
+                              </p>
+                              {track.bitrate?.includes('Lossless') || track.bitrate?.includes('32-Bit') ? (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0 tracking-wider">
+                                  HI-RES
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 border border-white/10 flex-shrink-0">
+                                  {track.format}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[11px] text-zinc-400 truncate font-medium">
+                                {track.artist} <span className="text-zinc-600">•</span> {track.album}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                {/* Context Menu Dropdown */}
-                {activeMenuTrackId === track.id && (
-                  <div className="absolute right-4 top-12 z-20 w-52 p-1.5 rounded-2xl bg-zinc-950 border border-white/15 shadow-2xl space-y-0.5 animate-in fade-in">
-                    <button
-                      onClick={() => {
-                        onPlayNext(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <ListPlus className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Play Next</span>
-                    </button>
+                        {/* Right Metadata & Options Menu Button */}
+                        <div className="flex items-center gap-2.5 flex-shrink-0">
+                          <span className="text-[11px] font-mono text-zinc-500 font-medium px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/5">
+                            {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
+                          </span>
 
-                    <button
-                      onClick={() => {
-                        onAddToQueue(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Add to Queue</span>
-                    </button>
+                          <button
+                            onClick={() => setActiveMenuTrackId(activeMenuTrackId === track.id ? null : track.id)}
+                            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
 
-                    <button
-                      onClick={() => {
-                        setShowPlaylistSelectorForTrack(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Disc className="w-3.5 h-3.5 text-pink-400" />
-                      <span>Add to Playlist...</span>
-                    </button>
+                        {/* Context Menu Dropdown */}
+                        {activeMenuTrackId === track.id && (
+                          <div className="absolute right-4 top-12 z-20 w-52 p-1.5 rounded-2xl bg-zinc-950 border border-white/15 shadow-2xl space-y-0.5 animate-in fade-in">
+                            <button
+                              onClick={() => {
+                                onPlayNext(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <ListPlus className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Play Next</span>
+                            </button>
 
-                    <button
-                      onClick={() => {
-                        onOpenTagEditor(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Tags className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Edit ID3 Tags</span>
-                    </button>
+                            <button
+                              onClick={() => {
+                                onAddToQueue(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-purple-400" />
+                              <span>Add to Queue</span>
+                            </button>
 
-                    <button
-                      onClick={() => {
-                        onOpenAudioTrimmer(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Scissors className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Ringtone Cutter</span>
-                    </button>
+                            <button
+                              onClick={() => {
+                                setShowPlaylistSelectorForTrack(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Disc className="w-3.5 h-3.5 text-pink-400" />
+                              <span>Add to Playlist...</span>
+                            </button>
 
-                    <button
-                      onClick={() => {
-                        onOpenP2PWithTrack(track);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Share2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Send to Phone (PIN / QR)</span>
-                    </button>
+                            <button
+                              onClick={() => {
+                                onOpenTagEditor(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Tags className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Edit ID3 Tags</span>
+                            </button>
 
-                    <button
-                      onClick={async () => {
-                        setActiveMenuTrackId(null);
-                        await shareTrackViaNativeOS(track);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Share via WhatsApp / Phone Apps</span>
-                    </button>
+                            <button
+                              onClick={() => {
+                                onOpenAudioTrimmer(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Scissors className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Ringtone Cutter</span>
+                            </button>
 
-                    <button
-                      onClick={async () => {
-                        setActiveMenuTrackId(null);
-                        await downloadTrackToDevice(track);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Save Song to Downloads Folder</span>
-                    </button>
+                            <button
+                              onClick={() => {
+                                onOpenP2PWithTrack(track);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Send to Phone (PIN / QR)</span>
+                            </button>
 
-                    <div className="h-px bg-white/10 my-1" />
+                            <button
+                              onClick={async () => {
+                                setActiveMenuTrackId(null);
+                                await shareTrackViaNativeOS(track);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Share via WhatsApp / Phone Apps</span>
+                            </button>
 
-                    <button
-                      onClick={() => {
-                        onDeleteTrack(track.id);
-                        setActiveMenuTrackId(null);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/15 text-left transition cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete from Library</span>
-                    </button>
-                  </div>
-                )}
+                            <button
+                              onClick={async () => {
+                                setActiveMenuTrackId(null);
+                                await downloadTrackToDevice(track);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Save Song to Downloads Folder</span>
+                            </button>
+
+                            <div className="h-px bg-white/10 my-1" />
+
+                            <button
+                              onClick={() => {
+                                onDeleteTrack(track.id);
+                                setActiveMenuTrackId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/15 text-left transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete from Library</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
               </div>
-            ))
+
+              {/* A-Z Fast Scroller on the right side */}
+              <div className="flex-shrink-0 sticky top-4 self-start">
+                <AlphabetScroller
+                  availableLetters={availableLetters}
+                  activeLetter={activeLetter}
+                  onSelectLetter={handleSelectLetter}
+                  onScrollToTop={handleScrollToTop}
+                  showScrollToTop={true}
+                />
+              </div>
+            </div>
           )}
         </div>
       )}
 
       {/* -------------------- FOLDERS VIEW & FILE MANAGER -------------------- */}
       {activeCategory === 'folders' && (
-        <div className="space-y-4">
-          {/* Sub-view: Selected Folder Detailed File Explorer */}
-          {selectedFolder ? (
-            <div className="space-y-3">
-              {/* Back to Folders Button & Breadcrumb */}
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setSelectedFolder(null)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-300 hover:text-white border border-white/10 transition cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Back to All Folders</span>
-                </button>
-
-                <span className="text-[11px] font-mono text-zinc-400 truncate max-w-[200px] sm:max-w-xs">
-                  {selectedFolder}
-                </span>
-              </div>
-
-              {/* Folder Header Card */}
-              {(() => {
-                const folderTracks = tracks.filter(t => getTrackFolderPath(t) === selectedFolder);
-                const totalBytes = folderTracks.reduce((acc, t) => acc + (t.fileSizeBytes || 8000000), 0);
-                const sizeMb = (totalBytes / (1024 * 1024)).toFixed(1);
-                const flacCount = folderTracks.filter(t => t.format === 'FLAC' || t.format === 'WAV').length;
-                const folderName = selectedFolder.split('/').filter(Boolean).pop() || 'Music';
-
-                return (
-                  <div className="p-4 rounded-3xl bg-gradient-to-br from-amber-500/15 via-zinc-900 to-zinc-900 border border-amber-500/30 space-y-3 shadow-xl">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0 shadow-lg">
-                          <FolderOpen className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                            <span>{folderName}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              {folderTracks.length} Files
-                            </span>
-                          </h3>
-                          <p className="text-xs text-zinc-400 font-mono mt-0.5 break-all">
-                            {selectedFolder}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10 text-xs">
-                      <span className="px-2 py-0.5 rounded-lg bg-white/5 text-zinc-300 font-medium">
-                        Total Size: {sizeMb} MB
-                      </span>
-                      {flacCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                          {flacCount} Lossless Hi-Res Tracks
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Action Controls */}
-                    <div className="flex flex-wrap items-center gap-2 pt-2">
-                      <button
-                        onClick={() => handlePlayFolderAll(selectedFolder, false)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition active:scale-95 shadow cursor-pointer"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-black" />
-                        <span>Play Folder</span>
-                      </button>
-
-                      <button
-                        onClick={() => handlePlayFolderAll(selectedFolder, true)}
-                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white text-xs font-bold transition active:scale-95 cursor-pointer"
-                      >
-                        <Shuffle className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Shuffle</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          folderTracks.forEach(t => onAddToQueue(t));
-                        }}
-                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white text-xs font-bold transition active:scale-95 cursor-pointer"
-                      >
-                        <ListPlus className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Add All to Queue</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Tracks Inside Selected Folder */}
-              <div className="space-y-1.5">
-                {tracks
-                  .filter(t => getTrackFolderPath(t) === selectedFolder)
-                  .map((track, idx) => (
-                    <div
-                      key={track.id}
-                      className="group relative flex items-center justify-between p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/5 hover:border-amber-500/30 transition shadow-sm"
-                    >
-                      <div
-                        onClick={() => onPlayTrack(track)}
-                        className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer pr-2"
-                      >
-                        <span className="text-xs font-mono text-zinc-500 w-5 text-center flex-shrink-0">
-                          {idx + 1}
-                        </span>
-
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow relative overflow-hidden flex-shrink-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
-                          }}
-                        >
-                          <Play className="w-4 h-4 fill-white text-white drop-shadow" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-amber-300 transition">
-                              {track.title}
-                            </p>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 border border-white/10 flex-shrink-0">
-                              {track.format}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-zinc-400 truncate mt-0.5 font-medium">
-                            {track.artist} • {track.album} • {track.bitrate}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs font-mono text-zinc-500 hidden sm:inline">
-                          {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
-                        </span>
-
-                        <button
-                          onClick={() => setActiveMenuTrackId(activeMenuTrackId === track.id ? null : track.id)}
-                          className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Context Menu */}
-                      {activeMenuTrackId === track.id && (
-                        <div className="absolute right-4 top-12 z-20 w-52 p-1.5 rounded-2xl bg-zinc-950 border border-white/15 shadow-2xl space-y-0.5 animate-in fade-in">
-                          <button
-                            onClick={() => {
-                              onPlayNext(track);
-                              setActiveMenuTrackId(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                          >
-                            <ListPlus className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Play Next</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              onAddToQueue(track);
-                              setActiveMenuTrackId(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5 text-purple-400" />
-                            <span>Add to Queue</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              onOpenTagEditor(track);
-                              setActiveMenuTrackId(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 text-left transition cursor-pointer"
-                          >
-                            <Tags className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Edit Tags</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              onDeleteTrack(track.id);
-                              setActiveMenuTrackId(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/15 text-left transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            /* Main Folders Directory Browser & Drive Overview */
-            <div className="space-y-3">
-              {/* Storage Drive Filter & Search Header */}
-              <div className="p-3.5 rounded-2xl bg-zinc-900 border border-white/10 space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 overflow-x-auto">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-1 mr-1">Drive:</span>
-                    {(['ALL', 'INTERNAL', 'SDCARD', 'TRANSFERS'] as StorageDriveFilter[]).map((drive) => (
-                      <button
-                        key={drive}
-                        onClick={() => setStorageDriveFilter(drive)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                          storageDriveFilter === drive
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        {drive === 'ALL' && 'All Storage'}
-                        {drive === 'INTERNAL' && 'Internal Storage'}
-                        {drive === 'SDCARD' && 'SD Card'}
-                        {drive === 'TRANSFERS' && 'Transfers'}
-                      </button>
-                    ))}
-                  </div>
-
-                  <span className="text-xs font-semibold text-zinc-400">
-                    {displayedFolders.length} Folders
-                  </span>
-                </div>
-
-                {/* Search in Folders */}
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={folderSearchTerm}
-                    onChange={(e) => setFolderSearchTerm(e.target.value)}
-                    placeholder="Search folders..."
-                    className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-zinc-950 border border-white/10 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500/50"
-                  />
-                  {folderSearchTerm && (
-                    <button
-                      onClick={() => setFolderSearchTerm('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Folder Cards List */}
-              <div className="space-y-2">
-                {displayedFolders.length === 0 ? (
-                  <div className="p-8 text-center bg-zinc-900/40 rounded-3xl border border-white/5 space-y-3">
-                    <Folder className="w-10 h-10 text-zinc-500 mx-auto" />
-                    <p className="text-xs text-zinc-400 font-medium">No folders found matching your filter</p>
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                      <button
-                        onClick={() => {
-                          setStorageDriveFilter('ALL');
-                          setFolderSearchTerm('');
-                        }}
-                        className="px-3 py-2 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-xs font-bold transition cursor-pointer"
-                      >
-                        Reset Filters
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  displayedFolders.map((folderPath) => {
-                    const folderTracks = tracks.filter(t => getTrackFolderPath(t) === folderPath);
-                    const folderName = folderPath.split('/').filter(Boolean).pop() || 'Music';
-                    const isSdCard = folderPath.includes('sdcard');
-                    const isTransfer = folderPath.includes('AuraTransfer') || folderPath.includes('Received');
-                    const totalBytes = folderTracks.reduce((acc, t) => acc + (t.fileSizeBytes || 8000000), 0);
-                    const sizeMb = (totalBytes / (1024 * 1024)).toFixed(1);
-                    const formats = Array.from(new Set(folderTracks.map(t => t.format)));
-
-                    return (
-                      <div
-                        key={folderPath}
-                        className="group p-3.5 rounded-2xl bg-zinc-900 border border-white/10 hover:border-amber-500/40 transition flex items-center justify-between gap-3 shadow-md"
-                      >
-                        {/* Folder Info & Click to open */}
-                        <div
-                          onClick={() => setSelectedFolder(folderPath)}
-                          className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
-                        >
-                          <div className="p-3 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-105 transition flex-shrink-0">
-                            <Folder className="w-5 h-5" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition truncate">
-                                {folderName}
-                              </h4>
-                              {isSdCard && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex-shrink-0">
-                                  SD Card
-                                </span>
-                              )}
-                              {isTransfer && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex-shrink-0">
-                                  Received
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="text-[11px] text-zinc-400 truncate font-mono mt-0.5">
-                              {folderPath}
-                            </p>
-
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-semibold text-zinc-300">
-                                {folderTracks.length} tracks ({sizeMb} MB)
-                              </span>
-                              <div className="flex items-center gap-1">
-                                {formats.map(fmt => (
-                                  <span key={fmt} className="text-[8px] font-bold px-1 rounded bg-white/5 text-zinc-400 border border-white/5">
-                                    {fmt}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={() => handlePlayFolderAll(folderPath, false)}
-                            className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold transition active:scale-95 shadow cursor-pointer"
-                            title="Play all tracks in folder"
-                          >
-                            <Play className="w-3.5 h-3.5 fill-black" />
-                          </button>
-
-                          <button
-                            onClick={() => setSelectedFolder(folderPath)}
-                            className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
-                            title="Browse folder tracks"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <FoldersBrowser
+          tracks={tracks}
+          playlists={playlists}
+          onPlayTrack={onPlayTrack}
+          onPlayNext={onPlayNext}
+          onAddToQueue={onAddToQueue}
+          onAddToPlaylist={onAddToPlaylist}
+          onOpenTagEditor={onOpenTagEditor}
+          onOpenAudioTrimmer={onOpenAudioTrimmer}
+          onOpenP2PWithTrack={onOpenP2PWithTrack}
+          onDeleteTrack={onDeleteTrack}
+          onImportTrack={onImportTrack}
+          onImportMultipleTracks={onImportMultipleTracks}
+        />
       )}
 
       {/* -------------------- ALBUMS VIEW -------------------- */}
       {activeCategory === 'albums' && (
-        <div className="space-y-3">
-          {selectedAlbum ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => setSelectedAlbum(null)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-300 hover:text-white border border-white/10 transition cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Back to All Albums</span>
-              </button>
-
-              {(() => {
-                const albumTracks = tracks.filter(t => t.album === selectedAlbum);
-                const first = albumTracks[0] || tracks[0];
-                return (
-                  <div className="p-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${first?.coverGradient?.[0] || '#4f46e5'}, ${first?.coverGradient?.[1] || '#9333ea'})`
-                        }}
-                      >
-                        <Disc className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-white">{selectedAlbum}</h3>
-                        <p className="text-xs text-zinc-400">{first?.artist} • {albumTracks.length} tracks</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => onPlayTrack(first)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-white" />
-                      <span>Play Album</span>
-                    </button>
-                  </div>
-                );
-              })()}
-
-              <div className="space-y-1.5">
-                {tracks
-                  .filter(t => t.album === selectedAlbum)
-                  .map((track, idx) => (
-                    <div
-                      key={track.id}
-                      onClick={() => onPlayTrack(track)}
-                      className="p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/5 flex items-center justify-between gap-3 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xs font-mono text-zinc-500 w-5 text-center">{idx + 1}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[11px] text-zinc-400 truncate">{track.artist} • {track.format}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono text-zinc-500">
-                        {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {albums.map((albumName) => {
-                const albumTracks = tracks.filter(t => t.album === albumName);
-                const first = albumTracks[0] || tracks[0];
-                return (
-                  <div
-                    key={albumName}
-                    onClick={() => setSelectedAlbum(albumName)}
-                    className="p-4 rounded-3xl bg-zinc-900 border border-white/10 hover:border-indigo-500/40 cursor-pointer transition hover:-translate-y-1 shadow-md space-y-2"
-                  >
-                    <div
-                      className="w-full aspect-square rounded-2xl flex items-center justify-center text-white shadow-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${first?.coverGradient?.[0] || '#4f46e5'}, ${first?.coverGradient?.[1] || '#9333ea'})`
-                      }}
-                    >
-                      <Disc className="w-10 h-10 text-white/80" />
-                    </div>
-                    <h4 className="text-xs font-bold text-white truncate">{albumName}</h4>
-                    <p className="text-[11px] text-zinc-400 truncate">{first?.artist} • {albumTracks.length} tracks</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <AlbumsBrowser
+          tracks={tracks}
+          playlists={playlists}
+          onPlayTrack={onPlayTrack}
+          onPlayNext={onPlayNext}
+          onAddToQueue={onAddToQueue}
+          onAddToPlaylist={onAddToPlaylist}
+          onOpenTagEditor={onOpenTagEditor}
+          onOpenAudioTrimmer={onOpenAudioTrimmer}
+          onOpenP2PWithTrack={onOpenP2PWithTrack}
+          onDeleteTrack={onDeleteTrack}
+        />
       )}
 
       {/* -------------------- ARTISTS VIEW -------------------- */}
       {activeCategory === 'artists' && (
-        <div className="space-y-3">
-          {selectedArtist ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => setSelectedArtist(null)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-300 hover:text-white border border-white/10 transition cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Back to All Artists</span>
-              </button>
-
-              {(() => {
-                const artistTracks = tracks.filter(t => t.artist === selectedArtist);
-                const first = artistTracks[0] || tracks[0];
-                return (
-                  <div className="p-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg flex-shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${first?.coverGradient?.[0] || '#4f46e5'}, ${first?.coverGradient?.[1] || '#9333ea'})`
-                        }}
-                      >
-                        <User className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-white">{selectedArtist}</h3>
-                        <p className="text-xs text-zinc-400">{artistTracks.length} songs in library</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => onPlayTrack(first)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-white" />
-                      <span>Play Artist</span>
-                    </button>
-                  </div>
-                );
-              })()}
-
-              <div className="space-y-1.5">
-                {tracks
-                  .filter(t => t.artist === selectedArtist)
-                  .map((track, idx) => (
-                    <div
-                      key={track.id}
-                      onClick={() => onPlayTrack(track)}
-                      className="p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/5 flex items-center justify-between gap-3 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xs font-mono text-zinc-500 w-5 text-center">{idx + 1}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[11px] text-zinc-400 truncate">{track.album} • {track.format}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono text-zinc-500">
-                        {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {artists.map((artistName) => {
-                const artistTracks = tracks.filter(t => t.artist === artistName);
-                const first = artistTracks[0] || tracks[0];
-                return (
-                  <div
-                    key={artistName}
-                    onClick={() => setSelectedArtist(artistName)}
-                    className="p-4 rounded-3xl bg-zinc-900 border border-white/10 hover:border-indigo-500/40 cursor-pointer transition hover:-translate-y-1 shadow-md flex flex-col items-center text-center space-y-2"
-                  >
-                    <div
-                      className="w-20 h-20 rounded-full flex items-center justify-center text-white shadow-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${first?.coverGradient?.[0] || '#4f46e5'}, ${first?.coverGradient?.[1] || '#9333ea'})`
-                      }}
-                    >
-                      <User className="w-8 h-8 text-white/90" />
-                    </div>
-                    <h4 className="text-xs font-bold text-white truncate w-full">{artistName}</h4>
-                    <p className="text-[11px] text-zinc-400">{artistTracks.length} tracks</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ArtistsBrowser
+          tracks={tracks}
+          playlists={playlists}
+          onPlayTrack={onPlayTrack}
+          onPlayNext={onPlayNext}
+          onAddToQueue={onAddToQueue}
+          onAddToPlaylist={onAddToPlaylist}
+          onOpenTagEditor={onOpenTagEditor}
+          onOpenAudioTrimmer={onOpenAudioTrimmer}
+          onOpenP2PWithTrack={onOpenP2PWithTrack}
+          onDeleteTrack={onDeleteTrack}
+          onSelectAlbum={() => {
+            setActiveCategory('albums');
+          }}
+        />
       )}
 
       {/* -------------------- GENRES VIEW -------------------- */}
       {activeCategory === 'genres' && (
-        <div className="space-y-3">
-          {selectedGenre ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => setSelectedGenre(null)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-300 hover:text-white border border-white/10 transition cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Back to All Genres</span>
-              </button>
-
-              <div className="space-y-1.5">
-                {tracks
-                  .filter(t => t.genre === selectedGenre)
-                  .map((track, idx) => (
-                    <div
-                      key={track.id}
-                      onClick={() => onPlayTrack(track)}
-                      className="p-2.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/5 flex items-center justify-between gap-3 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xs font-mono text-zinc-500 w-5 text-center">{idx + 1}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[11px] text-zinc-400 truncate">{track.artist} • {track.album}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono text-zinc-500">
-                        {Math.floor(track.duration / 60)}:{((track.duration % 60) < 10 ? '0' : '') + (track.duration % 60)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {genres.map((genreName) => {
-                const genreTracks = tracks.filter(t => t.genre === genreName);
-                const first = genreTracks[0] || tracks[0];
-                return (
-                  <div
-                    key={genreName}
-                    onClick={() => setSelectedGenre(genreName)}
-                    className="p-4 rounded-3xl bg-zinc-900 border border-white/10 hover:border-indigo-500/40 cursor-pointer transition hover:-translate-y-1 shadow-md space-y-2"
-                  >
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center text-white"
-                      style={{
-                        background: `linear-gradient(135deg, ${first?.coverGradient?.[0] || '#4f46e5'}, ${first?.coverGradient?.[1] || '#9333ea'})`
-                      }}
-                    >
-                      <Music className="w-6 h-6 text-white" />
-                    </div>
-                    <h4 className="text-xs font-bold text-white truncate">{genreName}</h4>
-                    <p className="text-[11px] text-zinc-400">{genreTracks.length} tracks</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <GenresBrowser
+          tracks={tracks}
+          playlists={playlists}
+          onPlayTrack={onPlayTrack}
+          onPlayNext={onPlayNext}
+          onAddToQueue={onAddToQueue}
+          onAddToPlaylist={onAddToPlaylist}
+          onOpenTagEditor={onOpenTagEditor}
+          onOpenAudioTrimmer={onOpenAudioTrimmer}
+          onOpenP2PWithTrack={onOpenP2PWithTrack}
+          onDeleteTrack={onDeleteTrack}
+        />
       )}
 
       {/* -------------------- YEARS VIEW -------------------- */}

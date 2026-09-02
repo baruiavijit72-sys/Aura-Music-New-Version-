@@ -58,6 +58,7 @@ import { AudioTrimmerModal } from './components/AudioTrimmerModal';
 import { ProfileCloudModal } from './components/ProfileCloudModal';
 import { SystemIntegrationModal } from './components/SystemIntegrationModal';
 import { PlaylistModal } from './components/PlaylistModal';
+import { FeedbackModal } from './components/FeedbackModal';
 import { BottomNav } from './components/BottomNav';
 import { AuthGateway } from './components/AuthGateway';
 import { SplashScreen, SplashSceneType } from './components/SplashScreen';
@@ -151,6 +152,7 @@ export function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
   // Track context modal targets
   const [tagEditorTrack, setTagEditorTrack] = useState<Track | null>(null);
@@ -629,6 +631,19 @@ export function App() {
     }));
   };
 
+  const handleUpdatePlaylist = (updatedPlaylist: Playlist) => {
+    setPlaylists(prev => {
+      const exists = prev.some(p => p.id === updatedPlaylist.id);
+      if (exists) {
+        return prev.map(p => p.id === updatedPlaylist.id ? updatedPlaylist : p);
+      }
+      return [updatedPlaylist, ...prev];
+    });
+    if (activePlaylist?.id === updatedPlaylist.id) {
+      setActivePlaylist(updatedPlaylist);
+    }
+  };
+
   const handleResetDemoData = () => {
     setTracks([]);
     setPlaylists([]);
@@ -741,7 +756,7 @@ export function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenSystem={() => setIsSystemOpen(true)}
         onOpenSplash={() => setShowSplash(true)}
-        iconTheme={iconTheme}
+        onPlayTrack={handlePlayTrack}
         userProfile={userProfile}
       />
 
@@ -751,16 +766,18 @@ export function App() {
           <HomeView
             tracks={visibleTracks}
             playlists={playlists}
+            currentTrack={currentTrack}
+            isPlaying={isPlaying}
             onPlayTrack={handlePlayTrack}
+            onTogglePlay={handleTogglePlay}
             onSelectPlaylist={(pl) => {
               setActivePlaylist(pl);
               setCurrentTab('playlists');
             }}
-            onOpenP2P={() => {
-              setP2pInitialTrack(null);
-              setIsP2POpen(true);
-            }}
-            onOpenEQ={() => setIsEQOpen(true)}
+            onNavigateTab={(tab) => setCurrentTab(tab)}
+            onOpenScan={() => setIsSystemOpen(true)}
+            onOpenFeedback={() => setIsFeedbackOpen(true)}
+            onOpenWidgets={() => setIsSystemOpen(true)}
           />
         )}
 
@@ -778,6 +795,11 @@ export function App() {
             onDeleteTrack={handleDeleteTrack}
             onImportTrack={handleImportTrack}
             onImportMultipleTracks={handleImportMultipleTracks}
+            onSwitchToPlaylists={() => setCurrentTab('playlists')}
+            onSelectPlaylist={(pl) => {
+              setActivePlaylist(pl);
+              setCurrentTab('playlists');
+            }}
           />
         )}
 
@@ -792,6 +814,12 @@ export function App() {
             onDuplicatePlaylist={handleDuplicatePlaylist}
             activePlaylist={activePlaylist}
             setActivePlaylist={setActivePlaylist}
+            onUpdatePlaylist={handleUpdatePlaylist}
+            onAddToQueue={handleAddToQueue}
+            onPlayNext={handlePlayNext}
+            onOpenTagEditor={(t) => setTagEditorTrack(t)}
+            onOpenAudioTrimmer={handleOpenAudioTrimmer}
+            onOpenP2PWithTrack={handleOpenP2PWithTrack}
           />
         )}
 
@@ -965,6 +993,15 @@ export function App() {
           onClose={() => setIsPlaylistModalOpen(false)}
           onCreatePlaylist={handleCreatePlaylist}
           availableTracks={tracks}
+        />
+      )}
+
+      {isFeedbackOpen && (
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
+          userEmail={userProfile.email}
+          userName={userProfile.name}
         />
       )}
     </div>
