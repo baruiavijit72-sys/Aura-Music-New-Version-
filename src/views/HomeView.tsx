@@ -17,7 +17,9 @@ import {
   Radio,
   Disc3,
   Flame,
-  Volume2
+  Volume2,
+  Gem,
+  Crown
 } from 'lucide-react';
 import { Track, Playlist } from '../types';
 import { RealAdBanner } from '../components/RealAdBanner';
@@ -50,6 +52,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenWidgets,
 }) => {
   const [activeFilter, setActiveFilter] = useState<'for_you' | 'songs' | 'playlists' | 'folders' | 'albums' | 'artists'>('for_you');
+  const [isVipActive, setIsVipActive] = useState(() => {
+    return localStorage.getItem('aura_vip_status') === 'active';
+  });
+
+  React.useEffect(() => {
+    const handleVipUpdate = () => {
+      setIsVipActive(localStorage.getItem('aura_vip_status') === 'active');
+    };
+    window.addEventListener('aura_vip_updated', handleVipUpdate);
+    return () => window.removeEventListener('aura_vip_updated', handleVipUpdate);
+  }, []);
 
   // Compute realistic buckets from tracks
   const favoriteTracks = tracks.filter(t => t.isFavorite);
@@ -161,7 +174,61 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </button>
       </div>
 
-      {/* 2. ADD WIDGETS BANNER */}
+      {/* 2. VIP DIAMOND SUBSCRIPTION PRO BANNER */}
+      <div 
+        onClick={() => window.dispatchEvent(new CustomEvent('open_vip_modal'))}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1c1300] via-[#241a05] to-[#121c29] border border-amber-400/50 hover:border-amber-300 p-4 sm:p-5 cursor-pointer transition-all duration-300 shadow-xl shadow-amber-950/20 group select-none active:scale-[0.99]"
+      >
+        {/* Ambient golden aura background glow */}
+        <div className="absolute -right-8 -top-8 w-36 h-36 bg-gradient-to-br from-amber-400/20 via-yellow-500/10 to-transparent rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+        
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 p-[1.5px] shadow-[0_0_15px_rgba(251,191,36,0.35)] shrink-0">
+              <div className="w-full h-full rounded-[14px] bg-black flex items-center justify-center">
+                <Gem className="w-6 h-6 text-amber-300 fill-amber-400/30 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300">
+                  {isVipActive ? 'AURA VIP PRO ACTIVE' : 'VIP DIAMOND SUBSCRIPTION'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 border border-amber-400/40 text-amber-300 uppercase tracking-wider">
+                  {isVipActive ? 'PRO MEMBER' : 'SAVE 50%'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span>✨ 32-Bit Lossless DSP</span>
+                <span className="text-zinc-600">•</span>
+                <span>⚡ 0 Ads</span>
+                <span className="text-zinc-600">•</span>
+                <span>🔥 Direct UPI & Bank Settlement</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t border-white/5 sm:border-t-0">
+            <div className="text-left sm:text-right">
+              <div className="text-xs font-bold text-amber-300">
+                {isVipActive ? 'Lossless Audio Enabled' : '₹210 / mo • ₹1,250 / yr'}
+              </div>
+              <div className="text-[10px] text-zinc-400">
+                {isVipActive ? 'Tap to view license & receipt' : 'Instant Activation via GPay/PhonePe'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-300 hover:to-yellow-400 text-black font-extrabold text-xs tracking-wide shadow-md shadow-amber-500/25 transition active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <span>{isVipActive ? 'Manage VIP' : 'Get VIP'}</span>
+              <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. ADD WIDGETS BANNER */}
       <div 
         onClick={onOpenWidgets}
         className="w-full p-3.5 sm:p-4 rounded-2xl bg-[#0f2438]/80 border border-[#0284c7]/40 hover:border-[#0284c7] cursor-pointer flex items-center justify-between transition-all duration-200 hover:bg-[#0f2438] active:scale-[0.99] shadow-lg shadow-black/30"

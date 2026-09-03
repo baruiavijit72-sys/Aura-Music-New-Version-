@@ -60,8 +60,17 @@ export const Header: React.FC<HeaderProps> = ({
     const handleVipUpdate = (e: any) => {
       setIsVipActive(localStorage.getItem('aura_vip_status') === 'active');
     };
+    const handleOpenVipModal = () => {
+      setIsVipModalOpen(true);
+    };
+
     window.addEventListener('aura_vip_updated', handleVipUpdate);
-    return () => window.removeEventListener('aura_vip_updated', handleVipUpdate);
+    window.addEventListener('open_vip_modal', handleOpenVipModal);
+
+    return () => {
+      window.removeEventListener('aura_vip_updated', handleVipUpdate);
+      window.removeEventListener('open_vip_modal', handleOpenVipModal);
+    };
   }, []);
 
   return (
@@ -203,16 +212,23 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="btn-diamond-vip"
                 onClick={() => setIsVipModalOpen(true)}
-                title={isVipActive ? "AURA MUSIC VIP PRO (Active)" : "AURA MUSIC VIP Lossless"}
-                className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition shadow-sm cursor-pointer active:scale-95 ${
+                title={isVipActive ? "AURA MUSIC VIP PRO (Active)" : "Subscribe to AURA MUSIC VIP"}
+                className={`relative h-9 px-2.5 sm:px-3 rounded-xl border flex items-center gap-1.5 transition shadow-sm cursor-pointer active:scale-95 ${
                   isVipActive
-                    ? 'bg-gradient-to-br from-amber-500/20 via-yellow-600/30 to-amber-950/60 border-amber-400 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
-                    : 'bg-[#142334] hover:bg-[#1e344f] border-white/10 text-amber-400 hover:text-amber-300'
+                    ? 'bg-gradient-to-r from-amber-500/25 via-yellow-600/30 to-amber-950/70 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.4)]'
+                    : 'bg-gradient-to-r from-amber-500/15 via-yellow-600/10 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border-amber-400/50 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.15)]'
                 }`}
               >
-                <Gem className={`w-4 h-4 ${isVipActive ? 'fill-amber-400/40 text-amber-300 animate-pulse' : ''}`} />
-                {isVipActive && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 border border-black shadow" />
+                <Gem className={`w-3.5 h-3.5 shrink-0 ${isVipActive ? 'fill-amber-400/40 text-amber-300 animate-pulse' : 'text-amber-300'}`} />
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-200">
+                  {isVipActive ? 'VIP PRO' : 'VIP'}
+                </span>
+                {isVipActive ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                ) : (
+                  <span className="hidden sm:inline-block text-[9px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-bold">
+                    PRO
+                  </span>
                 )}
               </button>
 

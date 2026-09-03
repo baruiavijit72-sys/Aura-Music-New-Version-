@@ -975,14 +975,35 @@ Support: baruiavijit72@gmail.com
                 </div>
 
                 {/* Mobile Intent Direct Apps / UPI Action */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`upi://pay?pa=8777047129@ybl&pn=Avijit%20Barui&am=${activeAmountRaw}&cu=INR&tn=Aura%20Music%20VIP%20PRO`}
+                      className="py-2.5 px-3 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/30 text-xs font-bold text-purple-200 hover:text-white flex items-center justify-center gap-1.5 transition active:scale-95 text-center"
+                    >
+                      <span>Pay via PhonePe</span>
+                    </a>
+                    <a
+                      href={`upi://pay?pa=baruiavijit72@okaxis&pn=Avijit%20Barui&am=${activeAmountRaw}&cu=INR&tn=Aura%20Music%20VIP%20PRO`}
+                      className="py-2.5 px-3 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/30 text-xs font-bold text-blue-200 hover:text-white flex items-center justify-center gap-1.5 transition active:scale-95 text-center"
+                    >
+                      <span>Pay via Google Pay</span>
+                    </a>
+                  </div>
+
                   <a
                     href={`upi://pay?pa=${encodeURIComponent(customMerchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${activeAmountRaw}&cu=INR&tn=${encodeURIComponent(`Aura Music VIP PRO`)}`}
-                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-zinc-900 to-zinc-800 hover:from-zinc-800 hover:to-zinc-700 border border-white/10 text-xs font-bold text-zinc-200 hover:text-white flex items-center justify-center gap-2 transition"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/40 text-xs font-bold text-amber-200 hover:text-white flex items-center justify-center gap-2 transition active:scale-95"
                   >
-                    <ExternalLink className="w-4 h-4 text-amber-400" />
-                    <span>Pay via Google Pay / PhonePe / Paytm</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Pay with Any UPI App (Paytm, BHIM, CRED)</span>
                   </a>
+
+                  {/* Account direct settlement confirmation note */}
+                  <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center justify-between">
+                    <span className="font-semibold">Receiver: Avijit Barui ({customMerchantUpi})</span>
+                    <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200 font-mono">100% Direct</span>
+                  </div>
 
                   {/* 12-Digit UTR / Transaction Reference Code Input */}
                   <div className="p-3 rounded-2xl bg-zinc-900/90 border border-amber-500/20 space-y-1.5 text-left">

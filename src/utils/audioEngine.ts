@@ -2,6 +2,7 @@ import { EqualizerSettings, Track } from '../types';
 
 export const EQ_FREQUENCIES = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 export const DEFAULT_FALLBACK_AUDIO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+const SILENT_AUDIO_CARRIER = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 function isAbortError(err: unknown): boolean {
   if (!err) return false;
@@ -21,11 +22,21 @@ class WebAudioEngine {
   private isPlaying = false;
   private playbackRate = 1.0;
   private currentTrack: Track | null = null;
-  private userVolume = 0.95;
+  private userVolume = 1.0;
+  private preAmpMultiplier = 1.75; // Clean +5.1dB Studio Loudness Boost
   private currentEQSettings: EqualizerSettings | null = null;
   private currentOnEndedCallback?: () => void;
   private playSessionId = 0;
   private visualizerPhase = 0;
+
+  // Web Audio DSP Graph Nodes
+  private mediaSourceNode: MediaElementAudioSourceNode | null = null;
+  private eqFilterNodes: BiquadFilterNode[] = [];
+  private bassFilterNode: BiquadFilterNode | null = null;
+  private trebleFilterNode: BiquadFilterNode | null = null;
+  private studioCompressor: DynamicsCompressorNode | null = null;
+  private masterGainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
 
   // Synthesizer nodes for fallback / sample playback
   private synthGainNode: GainNode | null = null;
@@ -33,14 +44,28 @@ class WebAudioEngine {
   private synthTimeOffset = 0;
 
   public init() {
-    if (!this.audioElement) {
-      this.audioElement = new Audio();
-      this.audioElement.preload = 'auto';
+    if (!this.audioElement && typeof document !== 'undefined') {
+      let el = document.getElementById('aura-master-audio') as HTMLAudioElement;
+      if (!el) {
+        el = document.createElement('audio');
+        el.id = 'aura-master-audio';
+        el.preload = 'auto';
+        (el as any).playsInline = true;
+        (el as any).webkitPlaysInline = true;
+        el.setAttribute('playsinline', 'true');
+        el.setAttribute('webkit-playsinline', 'true');
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        el.style.pointerEvents = 'none';
+        el.style.bottom = '0';
+        el.style.left = '0';
+        el.style.width = '1px';
+        el.style.height = '1px';
+        document.body.appendChild(el);
+      }
+
+      this.audioElement = el;
       this.audioElement.volume = this.userVolume;
-      (this.audioElement as any).playsInline = true;
-      (this.audioElement as any).webkitPlaysInline = true;
-      this.audioElement.setAttribute('playsinline', 'true');
-      this.audioElement.setAttribute('webkit-playsinline', 'true');
 
       this.audioElement.addEventListener('ended', () => {
         if (this.isPlaying && this.currentOnEndedCallback) {
@@ -49,7 +74,7 @@ class WebAudioEngine {
       });
     }
 
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       try {
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (AudioContextClass) {
@@ -62,6 +87,71 @@ class WebAudioEngine {
 
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
+    }
+
+    this.setupAudioGraph();
+  }
+
+  private setupAudioGraph() {
+    if (!this.ctx || !this.audioElement || this.mediaSourceNode) return;
+
+    try {
+      this.mediaSourceNode = this.ctx.createMediaElementSource(this.audioElement);
+
+      // 1. 10-Band EQ Filters
+      this.eqFilterNodes = EQ_FREQUENCIES.map((freq) => {
+        const filter = this.ctx!.createBiquadFilter();
+        filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.Q.value = 1.4;
+        filter.gain.value = 0;
+        return filter;
+      });
+
+      // 2. Bass Shaper (warm punchy low-end)
+      this.bassFilterNode = this.ctx.createBiquadFilter();
+      this.bassFilterNode.type = 'lowshelf';
+      this.bassFilterNode.frequency.value = 120;
+      this.bassFilterNode.gain.value = 4.0; // +4dB clean bass boost
+
+      // 3. Treble & Air Shaper (crystal clear vocal presence)
+      this.trebleFilterNode = this.ctx.createBiquadFilter();
+      this.trebleFilterNode.type = 'highshelf';
+      this.trebleFilterNode.frequency.value = 8000;
+      this.trebleFilterNode.gain.value = 3.0; // +3dB high clarity
+
+      // 4. Studio Dynamic Range Compressor (Prevents clipping & produces punchy, loud audio)
+      this.studioCompressor = this.ctx.createDynamicsCompressor();
+      this.studioCompressor.threshold.value = -12.0;
+      this.studioCompressor.knee.value = 10.0;
+      this.studioCompressor.ratio.value = 3.5;
+      this.studioCompressor.attack.value = 0.003;
+      this.studioCompressor.release.value = 0.22;
+
+      // 5. Master Pre-Amp Loudness Gain Node (Loud & Powerful sound)
+      this.masterGainNode = this.ctx.createGain();
+      this.masterGainNode.gain.value = this.userVolume * this.preAmpMultiplier;
+
+      // 6. Analyser for real-time visualizer
+      this.analyserNode = this.ctx.createAnalyser();
+      this.analyserNode.fftSize = 128;
+      this.analyserNode.smoothingTimeConstant = 0.8;
+
+      // Chain: Source -> EQ bands -> Bass -> Treble -> Studio Compressor -> Master Gain -> Analyser -> Destination
+      let prevNode: AudioNode = this.mediaSourceNode;
+      for (const filter of this.eqFilterNodes) {
+        prevNode.connect(filter);
+        prevNode = filter;
+      }
+      prevNode.connect(this.bassFilterNode);
+      this.bassFilterNode.connect(this.trebleFilterNode);
+      this.trebleFilterNode.connect(this.studioCompressor);
+      this.studioCompressor.connect(this.masterGainNode);
+      this.masterGainNode.connect(this.analyserNode);
+      this.analyserNode.connect(this.ctx.destination);
+    } catch (err) {
+      // Graceful fallback if CORS restrictions apply to certain external streams
+      console.warn('Audio graph connection notice:', err);
     }
   }
 
@@ -76,6 +166,11 @@ class WebAudioEngine {
       } catch {}
       this.synthGainNode = null;
     }
+    if (this.audioElement && this.audioElement.src === SILENT_AUDIO_CARRIER) {
+      try {
+        this.audioElement.pause();
+      } catch {}
+    }
   }
 
   private startSynth(track: Track, startOffsetSeconds: number = 0) {
@@ -86,8 +181,17 @@ class WebAudioEngine {
       this.ctx.resume().catch(() => {});
     }
 
+    // Keep the DOM audio element actively playing so Android Quick Settings / System UI notification stays active
+    if (this.audioElement) {
+      if (this.audioElement.src !== SILENT_AUDIO_CARRIER) {
+        this.audioElement.src = SILENT_AUDIO_CARRIER;
+        this.audioElement.loop = true;
+      }
+      this.audioElement.play().catch(() => {});
+    }
+
     const masterGain = this.ctx.createGain();
-    masterGain.gain.setValueAtTime(this.userVolume * 0.25, this.ctx.currentTime);
+    masterGain.gain.setValueAtTime(this.userVolume * 0.75 * this.preAmpMultiplier, this.ctx.currentTime);
     masterGain.connect(this.ctx.destination);
     this.synthGainNode = masterGain;
 
@@ -259,6 +363,11 @@ class WebAudioEngine {
 
   public setVolume(volume: number) {
     this.userVolume = Math.max(0, Math.min(1, volume));
+    if (this.masterGainNode && this.ctx) {
+      try {
+        this.masterGainNode.gain.setValueAtTime(this.userVolume * this.preAmpMultiplier, this.ctx.currentTime);
+      } catch {}
+    }
     if (this.audioElement) {
       this.audioElement.volume = this.userVolume;
     }
@@ -266,6 +375,43 @@ class WebAudioEngine {
 
   public updateEQ(settings: EqualizerSettings) {
     this.currentEQSettings = settings;
+
+    // Dynamic PreAmp Loudness Boost from EQ settings (up to 3.0x volume multiplier)
+    const extraVolBoost = ((settings.volumeBoost || 0) / 100) * 1.25;
+    this.preAmpMultiplier = 1.75 + extraVolBoost;
+    if (this.masterGainNode && this.ctx) {
+      try {
+        this.masterGainNode.gain.setValueAtTime(this.userVolume * this.preAmpMultiplier, this.ctx.currentTime);
+      } catch {}
+    }
+
+    // Apply 10 EQ band gains
+    if (settings.bands && this.eqFilterNodes.length > 0 && this.ctx) {
+      settings.bands.forEach((bandGain, idx) => {
+        const filter = this.eqFilterNodes[idx];
+        if (filter) {
+          try {
+            filter.gain.setValueAtTime(bandGain, this.ctx!.currentTime);
+          } catch {}
+        }
+      });
+    }
+
+    // Bass Boost
+    if (this.bassFilterNode && this.ctx) {
+      const extraBass = 3.5 + ((settings.bassBoost || 0) / 100) * 8.0;
+      try {
+        this.bassFilterNode.gain.setValueAtTime(extraBass, this.ctx.currentTime);
+      } catch {}
+    }
+
+    // Treble Clarity
+    if (this.trebleFilterNode && this.ctx) {
+      const extraTreble = 2.5 + ((settings.trebleBoost || 0) / 100) * 6.0;
+      try {
+        this.trebleFilterNode.gain.setValueAtTime(extraTreble, this.ctx.currentTime);
+      } catch {}
+    }
 
     // Playback Speed
     this.playbackRate = settings.playbackSpeed || 1.0;
@@ -278,6 +424,17 @@ class WebAudioEngine {
     if (!this.isPlaying) {
       dataArray.fill(0);
       return;
+    }
+
+    if (this.analyserNode) {
+      try {
+        this.analyserNode.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < Math.min(dataArray.length, 16); i++) {
+          sum += dataArray[i];
+        }
+        if (sum > 0) return;
+      } catch {}
     }
 
     this.visualizerPhase += 0.14;

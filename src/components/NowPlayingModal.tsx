@@ -18,7 +18,8 @@ import {
   Tags, 
   Gauge, 
   Zap, 
-  Check
+  Check,
+  Gem
 } from 'lucide-react';
 import { Track, PlaybackMode, EqualizerSettings } from '../types';
 import { LyricsView } from './LyricsView';
@@ -157,11 +158,20 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
             <p className="text-xs text-zinc-400 font-medium truncate max-w-[200px]">{track.album}</p>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open_vip_modal'))}
+              title="AURA VIP Lossless DSP"
+              className="px-2 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-600/20 border border-amber-400/40 hover:border-amber-300 text-amber-300 flex items-center gap-1 text-[11px] font-bold transition active:scale-95 shadow cursor-pointer"
+            >
+              <Gem className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>VIP</span>
+            </button>
+
             <button
               onClick={() => setShowLyrics(!showLyrics)}
               title="Toggle Lyrics"
-              className={`p-2 rounded-xl transition ${
+              className={`p-2 rounded-xl transition cursor-pointer ${
                 showLyrics ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -171,7 +181,7 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
             <button
               onClick={onOpenEQ}
               title="10-Band Equalizer"
-              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition"
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>

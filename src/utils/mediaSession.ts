@@ -124,25 +124,26 @@ export function updateSystemMediaSession(
     return;
   }
 
-  // Generate artwork for notification bar & lockscreen
-  let artworkUrl = track.coverUrl;
-  if (!artworkUrl || !artworkUrl.startsWith('http')) {
-    try {
-      artworkUrl = createCoverDataUrl(track.title, track.artist, track.coverGradient);
-    } catch (e) {
-      artworkUrl = '';
-    }
+  // Generate reliable artwork for notification bar & lockscreen
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const defaultIconSvg = `${origin}/icon.svg`;
+  
+  const artworkList: { src: string; sizes: string; type: string }[] = [];
+
+  // If track has a valid direct cover URL (http/https or blob:)
+  if (track.coverUrl && (track.coverUrl.startsWith('http') || track.coverUrl.startsWith('blob:'))) {
+    artworkList.push(
+      { src: track.coverUrl, sizes: '96x96', type: 'image/jpeg' },
+      { src: track.coverUrl, sizes: '192x192', type: 'image/jpeg' },
+      { src: track.coverUrl, sizes: '512x512', type: 'image/jpeg' },
+    );
   }
 
-  const artworkList = artworkUrl
-    ? [
-        { src: artworkUrl, sizes: '96x96', type: 'image/png' },
-        { src: artworkUrl, sizes: '128x128', type: 'image/png' },
-        { src: artworkUrl, sizes: '192x192', type: 'image/png' },
-        { src: artworkUrl, sizes: '256x256', type: 'image/png' },
-        { src: artworkUrl, sizes: '512x512', type: 'image/png' },
-      ]
-    : [];
+  // Always append absolute standard icons so Android OS can load them cleanly via HTTP
+  artworkList.push(
+    { src: defaultIconSvg, sizes: '192x192', type: 'image/svg+xml' },
+    { src: defaultIconSvg, sizes: '512x512', type: 'image/svg+xml' },
+  );
 
   // 1. Set System Metadata (Notification Title, Artist, Album, Art)
   try {
@@ -153,7 +154,16 @@ export function updateSystemMediaSession(
       artwork: artworkList,
     });
   } catch (err) {
-    console.warn('Failed to set mediaSession metadata:', err);
+    // If complex artwork fails on certain Android versions, fallback to metadata without artwork
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title || 'Aura Track',
+        artist: track.artist || 'Aura Music',
+        album: track.album || 'Aura High-Res Audio',
+      });
+    } catch (fallbackErr) {
+      console.warn('Failed to set mediaSession metadata fallback:', fallbackErr);
+    }
   }
 
   // 2. Set Playback State
