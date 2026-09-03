@@ -174,6 +174,16 @@ class AuraViewModel : ViewModel() {
     var headphoneAutoPause by mutableStateOf(true)
     var volumeBalance by mutableFloatStateOf(0f)
 
+    // VIP Diamond State
+    var isVipDiamondModalVisible by mutableStateOf(false)
+    var isVipUser by mutableStateOf(false)
+
+    fun activateVip(utr: String) {
+        isVipUser = true
+        userProfile = userProfile.copy(isVip = true)
+        isVipDiamondModalVisible = false
+    }
+
     // Listening Analytics & Database
     var listeningHistory by mutableStateOf<List<ListeningHistoryEntry>>(emptyList())
         private set
@@ -263,8 +273,8 @@ class AuraViewModel : ViewModel() {
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 loudnessEnhancerEffect = LoudnessEnhancer(audioSessionId).apply {
-                    enabled = soundSettings.isEnabled
-                    setTargetGain((soundSettings.volumeBoost * 800).toInt())
+                    enabled = true
+                    setTargetGain(1000 + (soundSettings.volumeBoost * 1800).toInt())
                 }
             }
             applyEqualizerSettingsToEffects()
@@ -296,8 +306,8 @@ class AuraViewModel : ViewModel() {
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 loudnessEnhancerEffect?.apply {
-                    enabled = soundSettings.isEnabled
-                    setTargetGain((soundSettings.volumeBoost * 800).toInt())
+                    enabled = true
+                    setTargetGain(1000 + (soundSettings.volumeBoost * 1800).toInt())
                 }
             }
         } catch (e: Exception) {

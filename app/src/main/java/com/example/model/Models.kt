@@ -137,7 +137,8 @@ data class UserProfile(
     val avatarInitials: String = "AB",
     val lastCloudSyncTime: Long = System.currentTimeMillis(),
     val totalPlaylistsSynced: Int = 14,
-    val totalCloudBackupSizeMb: Double = 18.4
+    val totalCloudBackupSizeMb: Double = 18.4,
+    val isVip: Boolean = false
 )
 
 data class ListeningHistoryEntry(

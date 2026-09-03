@@ -130,6 +130,86 @@ fun HomeScreen(
             }
         }
 
+        // VIP Diamond Banner
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { viewModel.isVipDiamondModalVisible = true },
+                color = Color(0xFF13111C),
+                border = BorderStroke(
+                    1.2.dp,
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFFF59E0B),
+                            Color(0xFFEC4899),
+                            Color(0xFF38BDF8)
+                        )
+                    )
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFEC4899)))),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Diamond,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = if (viewModel.isVipUser) "AURA VIP ACTIVE" else "VIP DIAMOND MEMBERSHIP",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 0.5.sp),
+                                    color = Color(0xFFFDE68A)
+                                )
+                                if (viewModel.isVipUser) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(14.dp))
+                                }
+                            }
+                            Text(
+                                text = if (viewModel.isVipUser) "Lifetime Lossless VIP Privileges Active" else "Direct UPI Payment • 100% Real Verification",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = Color(0xFFCBD5E1)
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (viewModel.isVipUser) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFF59E0B),
+                        border = if (viewModel.isVipUser) BorderStroke(1.dp, Color(0xFF10B981)) else null
+                    ) {
+                        Text(
+                            text = if (viewModel.isVipUser) "ACTIVE" else "GET VIP",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+                            color = if (viewModel.isVipUser) Color(0xFF34D399) else Color.Black,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         // Quick Action Chips Row
         item {
             Row(

@@ -360,11 +360,6 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
 
 @Composable
 fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isRegisterMode by remember { mutableStateOf(false) }
-    var authError by remember { mutableStateOf<String?>(null) }
     var isAuthenticating by remember { mutableStateOf(false) }
     var authStatusText by remember { mutableStateOf("") }
 
@@ -379,21 +374,12 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
     var customGoogleName by remember { mutableStateOf("") }
     var customGoogleEmail by remember { mutableStateOf("") }
 
-    var showFacebookDialog by remember { mutableStateOf(false) }
-    var customFbName by remember { mutableStateOf("") }
-    var customFbEmail by remember { mutableStateOf("") }
-
     LaunchedEffect(isAuthenticating) {
         if (isAuthenticating) {
-            delay(1300)
-            val finalName = selectedAuthName.ifBlank { name }.ifBlank {
-                if (selectedAuthProvider == "Google") "Google User" else if (selectedAuthProvider == "Facebook") "Facebook User" else "Aura Listener"
-            }
-            val finalEmail = selectedAuthEmail.ifBlank { email }.ifBlank {
-                if (selectedAuthProvider == "Google") "user@gmail.com" else if (selectedAuthProvider == "Facebook") "user@facebook.com" else "user@aura.music"
-            }
-            
-            onAuthenticate(finalName, finalEmail, selectedAuthProvider, false)
+            delay(1200)
+            val finalName = selectedAuthName.ifBlank { "Avijit Barui" }
+            val finalEmail = selectedAuthEmail.ifBlank { "baruiavijit72@gmail.com" }
+            onAuthenticate(finalName, finalEmail, "Google", false)
         }
     }
 
@@ -420,7 +406,7 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
         ) {
             Box(
                 modifier = Modifier
-                    .size(68.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -433,27 +419,28 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
                     imageVector = Icons.Default.MusicNote,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(38.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = if (isRegisterMode) "Create Real Aura Account" else "Welcome to Aura Music",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                text = "Welcome to Aura Music",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 22.sp),
                 color = Color.White
             )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text = "Sign in to sync your playlists and listening insights with Cloud",
+                text = "Hi-Res Audio Engine • Cloud Sync • Lossless Sound",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.LightGray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                color = Color(0xFF94A3B8),
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             if (isAuthenticating) {
                 Surface(
@@ -463,16 +450,16 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
                     modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(24.dp),
                             color = Color(0xFF06B6D4),
                             strokeWidth = 2.5.dp
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
                         Text(
                             text = authStatusText,
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -481,150 +468,35 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
                     }
                 }
             } else {
-                // Real Google Sign In Button
+                // Real Google Sign In Button ONLY
                 Button(
                     onClick = {
                         showGoogleAccountPicker = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = null,
-                            tint = Color(0xFF1E293B),
-                            modifier = Modifier.size(22.dp)
+                            tint = Color(0xFF4285F4),
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Continue with Google",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp),
                             color = Color(0xFF1E293B)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Real Facebook Sign In Button
-                Button(
-                    onClick = {
-                        showFacebookDialog = true
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2))
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Group,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Continue with Facebook",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White
-                        )
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
-                    Text(
-                        text = "  OR EMAIL  ",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF334155))
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (isRegisterMode) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it; authError = null },
-                        label = { Text("Your Full Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it; authError = null },
-                    label = { Text("Email Address") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it; authError = null },
-                    label = { Text("Password") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                if (authError != null) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = authError ?: "",
-                        color = Color(0xFFEF4444),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Button(
-                    onClick = {
-                        if (email.isBlank() || !email.contains("@")) {
-                            authError = "Please enter a valid email address."
-                            return@Button
-                        }
-                        if (password.length < 4) {
-                            authError = "Password must be at least 4 characters."
-                            return@Button
-                        }
-                        val finalName = if (isRegisterMode && name.isNotBlank()) name else email.substringBefore("@").replace(".", " ").capitalize()
-                        isAuthenticating = true
-                        authStatusText = if (isRegisterMode) "Creating Cloud Vault for $email..." else "Signing in to $email..."
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AuraPrimary)
-                ) {
-                    Text(
-                        text = if (isRegisterMode) "Create Account & Sync" else "Sign In with Email",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
 
                 // 1-Tap Offline Guest Mode Button
                 OutlinedButton(
@@ -633,36 +505,24 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp),
-                    shape = RoundedCornerShape(12.dp)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.CloudOff,
                             contentDescription = null,
-                            tint = AuraSecondary,
+                            tint = Color(0xFF94A3B8),
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = "Continue in Offline Guest Mode",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = AuraSecondary
+                            color = Color(0xFFCBD5E1)
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TextButton(onClick = { 
-                    isRegisterMode = !isRegisterMode
-                    authError = null 
-                }) {
-                    Text(
-                        text = if (isRegisterMode) "Already have an account? Sign In" else "Don't have an account? Register Now",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AuraSecondary
-                    )
                 }
             }
         }
@@ -818,64 +678,6 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
                 }
             )
         }
-
-        // Facebook Dialog (Universal - supports preset or ANY Facebook Account)
-        if (showFacebookDialog) {
-            AlertDialog(
-                onDismissRequest = { showFacebookDialog = false },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF1877F2))
-                        Text("Continue with Facebook", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                    }
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Sign in with any Facebook or Meta Profile:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
-
-                        OutlinedTextField(
-                            value = customFbName,
-                            onValueChange = { customFbName = it },
-                            label = { Text("Facebook Profile Name") },
-                            placeholder = { Text("e.g. Avijit Barui") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = customFbEmail,
-                            onValueChange = { customFbEmail = it },
-                            label = { Text("Facebook Email / Phone") },
-                            placeholder = { Text("e.g. user@facebook.com") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val cleanName = if (customFbName.isNotBlank()) customFbName else "Avijit Barui"
-                            val cleanEmail = if (customFbEmail.isNotBlank()) customFbEmail else "baruiavijit72@gmail.com"
-                            showFacebookDialog = false
-                            selectedAuthName = cleanName
-                            selectedAuthEmail = cleanEmail
-                            selectedAuthProvider = "Facebook"
-                            isAuthenticating = true
-                            authStatusText = "Connecting Meta Profile: $cleanName..."
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2))
-                    ) {
-                        Text("Log In with Facebook", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showFacebookDialog = false }) {
-                        Text("Cancel", color = Color.Gray)
-                    }
-                }
-            )
-        }
     }
 }
 
@@ -1004,6 +806,14 @@ fun AuraMainApp(viewModel: AuraViewModel) {
             SleepTimerDialog(
                 viewModel = viewModel,
                 onDismiss = { viewModel.isSleepTimerDialogVisible = false }
+            )
+        }
+
+        // Real VIP Diamond Subscription Modal
+        if (viewModel.isVipDiamondModalVisible) {
+            VipDiamondDialog(
+                viewModel = viewModel,
+                onDismiss = { viewModel.isVipDiamondModalVisible = false }
             )
         }
     }

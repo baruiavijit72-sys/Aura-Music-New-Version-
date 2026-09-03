@@ -87,6 +87,15 @@ fun TopNavBar(
             }
         },
         actions = {
+            // VIP Diamond Subscription
+            IconButton(onClick = { viewModel.isVipDiamondModalVisible = true }) {
+                Icon(
+                    imageVector = Icons.Default.Diamond,
+                    contentDescription = "VIP Diamond",
+                    tint = if (viewModel.isVipUser) Color(0xFFF59E0B) else Color(0xFF38BDF8)
+                )
+            }
+
             // Equalizer Shortcut
             IconButton(onClick = { viewModel.navigateTo(AppScreen.EQUALIZER) }) {
                 Icon(

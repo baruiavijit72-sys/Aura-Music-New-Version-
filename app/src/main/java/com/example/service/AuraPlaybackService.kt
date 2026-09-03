@@ -8,9 +8,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.MediaMetadata
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.state.AuraViewModel
 
@@ -65,10 +67,44 @@ class AuraPlaybackService : Service() {
     private var currentTitle = "Aura Music"
     private var currentArtist = "Playing your music"
     private var isCurrentlyPlaying = false
+    private var mediaSession: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        initMediaSession()
+    }
+
+    private fun initMediaSession() {
+        try {
+            mediaSession = MediaSession(this, "AuraMusicPlaybackSession").apply {
+                setCallback(object : MediaSession.Callback() {
+                    override fun onPlay() {
+                        AuraViewModel.activeInstance?.resumePlayback()
+                    }
+                    override fun onPause() {
+                        AuraViewModel.activeInstance?.pausePlayback()
+                    }
+                    override fun onSkipToNext() {
+                        AuraViewModel.activeInstance?.skipToNext()
+                    }
+                    override fun onSkipToPrevious() {
+                        AuraViewModel.activeInstance?.skipToPrevious()
+                    }
+                    override fun onStop() {
+                        AuraViewModel.activeInstance?.pausePlayback()
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                    }
+                    override fun onSeekTo(pos: Long) {
+                        AuraViewModel.activeInstance?.seekTo(pos.toFloat() / 1000f)
+                    }
+                })
+                isActive = true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -101,6 +137,8 @@ class AuraPlaybackService : Service() {
             }
         }
 
+        updateMediaSessionState()
+
         val notification = buildNotification(currentTitle, currentArtist, isCurrentlyPlaying)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -112,14 +150,55 @@ class AuraPlaybackService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        // Return START_STICKY so Android OS recreates the service if killed,
-        // ensuring playback and background session remain persistent
         return START_STICKY
     }
 
+    private fun updateMediaSessionState() {
+        try {
+            mediaSession?.let { session ->
+                val stateBuilder = PlaybackState.Builder()
+                    .setActions(
+                        PlaybackState.ACTION_PLAY or
+                        PlaybackState.ACTION_PAUSE or
+                        PlaybackState.ACTION_PLAY_PAUSE or
+                        PlaybackState.ACTION_SKIP_TO_NEXT or
+                        PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackState.ACTION_STOP or
+                        PlaybackState.ACTION_SEEK_TO
+                    )
+                    .setState(
+                        if (isCurrentlyPlaying) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED,
+                        PlaybackState.PLAYBACK_POSITION_UNKNOWN,
+                        1.0f
+                    )
+                session.setPlaybackState(stateBuilder.build())
+
+                val metadata = MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, currentTitle)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, currentArtist)
+                    .build()
+                session.setMetadata(metadata)
+                session.isActive = true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            mediaSession?.apply {
+                isActive = false
+                release()
+            }
+            mediaSession = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        super.onDestroy()
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // Crucial: When the user swipes away the app from the recent apps / task manager (side screen),
-        // we DO NOT stop the service if audio is playing. The foreground service continues running!
         super.onTaskRemoved(rootIntent)
     }
 
@@ -164,22 +243,55 @@ class AuraPlaybackService : Service() {
         val stopIntent = Intent(this, AuraPlaybackService::class.java).apply { action = ACTION_STOP }
         val stopPendingIntent = PendingIntent.getService(this, 4, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            Notification.Builder(this)
+        }
+
+        builder
             .setContentTitle(title)
             .setContentText(artist)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(openAppPendingIntent)
             .setOngoing(isPlaying)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.drawable.ic_media_previous, "Previous", prevPendingIntent)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(
-                if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
-                if (isPlaying) "Pause" else "Play",
-                togglePendingIntent
+                Notification.Action.Builder(
+                    android.R.drawable.ic_media_previous,
+                    "Previous",
+                    prevPendingIntent
+                ).build()
             )
-            .addAction(android.R.drawable.ic_media_next, "Next", nextPendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Close", stopPendingIntent)
+            .addAction(
+                Notification.Action.Builder(
+                    if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
+                    if (isPlaying) "Pause" else "Play",
+                    togglePendingIntent
+                ).build()
+            )
+            .addAction(
+                Notification.Action.Builder(
+                    android.R.drawable.ic_media_next,
+                    "Next",
+                    nextPendingIntent
+                ).build()
+            )
+            .addAction(
+                Notification.Action.Builder(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Close",
+                    stopPendingIntent
+                ).build()
+            )
+
+        if (mediaSession != null) {
+            builder.setStyle(
+                Notification.MediaStyle()
+                    .setMediaSession(mediaSession!!.sessionToken)
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+        }
 
         return builder.build()
     }
