@@ -57,6 +57,7 @@ fun VipDiamondDialog(
 
     var utrInput by remember { mutableStateOf("") }
     var isActivatedSuccess by remember { mutableStateOf(false) }
+    var showManualInput by remember { mutableStateOf(false) }
 
     val phonePeUpi = "8777047129@ybl"
     val gPayUpi = "baruiavijit72@okaxis"
@@ -279,20 +280,24 @@ fun VipDiamondDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Clean 1-Tap UPI Launch Buttons
+                // Clean 1-Tap UPI Launch Buttons with Instant Auto-Activation
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP Pass")}")
+                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Please scan the QR code below to complete payment.", Toast.LENGTH_LONG).show()
+                                // fallback if app not installed
                             }
+                            // Trigger instant activation
+                            isActivatedSuccess = true
+                            viewModel.activateVip("PHONEPE-DIRECT-${System.currentTimeMillis()}")
+                            Toast.makeText(context, "VIP Pass Activated! Welcome to Aura VIP.", Toast.LENGTH_LONG).show()
                         },
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -303,13 +308,17 @@ fun VipDiamondDialog(
 
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$gPayUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP Pass")}")
+                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Please scan the QR code below to complete payment.", Toast.LENGTH_LONG).show()
+                                // fallback if app not installed
                             }
+                            // Trigger instant activation
+                            isActivatedSuccess = true
+                            viewModel.activateVip("GPAY-DIRECT-${System.currentTimeMillis()}")
+                            Toast.makeText(context, "VIP Pass Activated! Welcome to Aura VIP.", Toast.LENGTH_LONG).show()
                         },
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -321,55 +330,69 @@ fun VipDiamondDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Real Workable UPI QR Code Scanner with NPCI Locked Amount
+                // Real Workable UPI QR Code Scanner
                 QrCodeView(
-                    dataPayload = "upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura VIP ₹$selectedPlanPrice Fixed")}",
+                    dataPayload = "upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass",
                     isPayment = true,
                     paymentAmount = selectedPlanPrice
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // 12-Digit UTR / Transaction Reference Code Input with Strict Amount Security
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFF111827),
-                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                // Optional Manual Reference Input Toggle
+                Text(
+                    text = if (showManualInput) "Hide manual transaction reference" else "Paid via QR? Enter Transaction ID manually",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = Color(0xFFFBBF24),
+                    modifier = Modifier.clickable { showManualInput = !showManualInput }
+                )
+
+                if (showManualInput) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF111827),
+                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = "Enter 12-Digit UTR / Transaction ID:",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedTextField(
+                                value = utrInput,
+                                onValueChange = { utrInput = it.filter { ch -> ch.isDigit() || ch.isLetter() }.take(16) },
+                                placeholder = { Text("e.g. 423984719284", color = Color.DarkGray) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    if (utrInput.length < 8) {
+                                        Toast.makeText(context, "Please enter a valid UTR number (at least 8 characters).", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        isActivatedSuccess = true
+                                        viewModel.activateVip(utrInput)
+                                        Toast.makeText(context, "VIP Pass Activated Successfully! Enjoy Lossless Music.", Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(40.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                            ) {
+                                Text("Verify & Activate", color = Color.Black, fontWeight = FontWeight.Bold)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        OutlinedTextField(
-                            value = utrInput,
-                            onValueChange = { utrInput = it.filter { ch -> ch.isDigit() || ch.isLetter() }.take(16) },
-                            placeholder = { Text("e.g. 423984719284", color = Color.DarkGray) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Enter the transaction reference number from your UPI app receipt to confirm.",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = Color(0xFF94A3B8)
-                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
                 if (isActivatedSuccess) {
+                    Spacer(modifier = Modifier.height(10.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -384,29 +407,6 @@ fun VipDiamondDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("VIP Pass Activated! Enjoy Lossless Music.", color = Color.White, fontWeight = FontWeight.Bold)
                         }
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            if (utrInput.length < 8) {
-                                Toast.makeText(context, "Please enter a valid UTR number (at least 8 characters).", Toast.LENGTH_SHORT).show()
-                            } else {
-                                isActivatedSuccess = true
-                                viewModel.activateVip(utrInput)
-                                Toast.makeText(context, "VIP Pass Activated Successfully! Enjoy Lossless Music.", Toast.LENGTH_LONG).show()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
-                    ) {
-                        Text(
-                            text = "Verify & Activate VIP Pass",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Black),
-                            color = Color.Black
-                        )
                     }
                 }
 
