@@ -1290,35 +1290,28 @@ Support: baruiavijit72@gmail.com
                     <span>Pay ₹{activeAmountRaw} with Any UPI App (Paytm, BHIM, CRED)</span>
                   </a>
 
-                  {/* Account direct settlement confirmation note */}
-                  <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center justify-between">
-                    <span className="font-semibold">Instant UPI Transfer ({customMerchantUpi})</span>
-                    <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200 font-mono">🔒 Locked ₹{activeAmountRaw}</span>
-                  </div>
-
                   {/* 12-Digit UTR / Transaction Reference Code Input */}
-                  <div className="p-3 rounded-2xl bg-zinc-900/90 border border-amber-500/20 space-y-1.5 text-left">
+                  <div className="p-3 rounded-2xl bg-zinc-900/90 border border-white/10 space-y-1.5 text-left">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-zinc-200 flex items-center gap-1.5">
                         <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Enter 12-Digit UTR / Ref Code:</span>
+                        <span>Enter 12-Digit UTR / Transaction ID:</span>
                       </label>
-                      <span className="text-[10px] text-amber-400 font-mono font-bold">Exact ₹{activeAmountRaw} Required</span>
                     </div>
                     <input
                       type="text"
-                      maxLength={12}
+                      maxLength={16}
                       value={utrNumber}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
                         setUtrNumber(val);
                         if (utrError) setUtrError('');
                       }}
-                      placeholder="e.g. 424589102341 (12 digits)"
+                      placeholder="e.g. 424589102341"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-white/10 text-xs font-mono text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 tracking-wider"
                     />
                     <p className="text-[10px] text-zinc-500 leading-tight">
-                      Transfer must match exactly ₹{activeAmountRaw}. Incomplete or ₹1 trial transfers will not be verified by bank reconciliation.
+                      Enter the reference number from your UPI app receipt to confirm your membership.
                     </p>
                     {utrError && (
                       <p className="text-[10px] text-rose-400 font-medium">{utrError}</p>

@@ -279,112 +279,43 @@ fun VipDiamondDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Instant UPI Transfer Card
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF0F172A),
-                    border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
-                                Text("Instant UPI Transfer", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.2f)
-                            ) {
-                                Text("100% Direct", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = Color(0xFF34D399), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("PhonePe / BHIM: $phonePeUpi", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
-                            Text(
-                                "Copy",
-                                color = Color(0xFF38BDF8),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable {
-                                    clipboardManager.setText(AnnotatedString(phonePeUpi))
-                                    Toast.makeText(context, "UPI ID copied: $phonePeUpi", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Google Pay: $gPayUpi", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
-                            Text(
-                                "Copy",
-                                color = Color(0xFF38BDF8),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable {
-                                    clipboardManager.setText(AnnotatedString(gPayUpi))
-                                    Toast.makeText(context, "UPI ID copied: $gPayUpi", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Direct 1-Tap UPI Launch Buttons
+                // Clean 1-Tap UPI Launch Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP ₹$selectedPlanPrice (Fixed Locked)")}")
+                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP Pass")}")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Could not open UPI app. Please scan the QR code below.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Please scan the QR code below to complete payment.", Toast.LENGTH_LONG).show()
                             }
                         },
-                        modifier = Modifier.weight(1f).height(46.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF581C87))
                     ) {
-                        Text("Pay ₹$selectedPlanPrice via PhonePe", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("Pay via PhonePe", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
 
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$gPayUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP ₹$selectedPlanPrice (Fixed Locked)")}")
+                            val uri = Uri.parse("upi://pay?pa=$gPayUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP Pass")}")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Could not open UPI app. Please scan the QR code below.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Please scan the QR code below to complete payment.", Toast.LENGTH_LONG).show()
                             }
                         },
-                        modifier = Modifier.weight(1f).height(46.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
                     ) {
-                        Text("Pay ₹$selectedPlanPrice via GPay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("Pay via Google Pay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
 
@@ -413,24 +344,10 @@ fun VipDiamondDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Enter 12-Digit UTR / Ref Number:",
+                                text = "Enter 12-Digit UTR / Transaction ID:",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFFFDE68A)
+                                color = Color.White
                             )
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.15f)
-                            ) {
-                                Text(
-                                    text = "Requires Exact ₹$selectedPlanPrice",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Black
-                                    ),
-                                    color = Color(0xFF34D399),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
@@ -443,7 +360,7 @@ fun VipDiamondDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "🔒 Security Check: Transfer must match exactly ₹$selectedPlanPrice. Incomplete payments (e.g. ₹1) are detected by bank reconciliation and automatically rejected.",
+                            text = "Enter the transaction reference number from your UPI app receipt to confirm.",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = Color(0xFF94A3B8)
                         )

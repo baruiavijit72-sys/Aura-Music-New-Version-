@@ -50,45 +50,24 @@ fun QrCodeView(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (isPayment) {
-                // Official UPI Header Banner
+                // Clean Merchant Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFF0F172A)
-                    ) {
-                        Text(
-                            text = "BHIM ▶ UPI",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Black,
-                                fontSize = 11.sp,
-                                letterSpacing = 1.sp
-                            ),
-                            color = Color(0xFF38BDF8),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFF10B981).copy(alpha = 0.15f)
-                    ) {
-                        Text(
-                            text = "100% DIRECT SCAN",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp
-                            ),
-                            color = Color(0xFF059669),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                        )
-                    }
+                    Text(
+                        text = "UPI Payment QR",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = Color(0xFF64748B)
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             Box(
@@ -139,12 +118,12 @@ fun QrCodeView(
                     Spacer(modifier = Modifier.height(8.dp))
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFF0F172A)
+                        color = Color(0xFFF1F5F9)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
                                 text = "Amount to Pay:",
@@ -152,41 +131,18 @@ fun QrCodeView(
                                     fontWeight = FontWeight.Normal,
                                     fontSize = 11.sp
                                 ),
-                                color = Color(0xFF94A3B8)
+                                color = Color(0xFF64748B)
                             )
                             Text(
                                 text = "₹$paymentAmount",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 14.sp
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 ),
-                                color = Color(0xFFFBBF24)
+                                color = Color(0xFF0F172A)
                             )
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFFEF4444).copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = "🔒 LOCKED",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 9.sp
-                                    ),
-                                    color = Color(0xFFF87171),
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                )
-                            }
                         }
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Exact transfer required. Do not modify the amount during scan.",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Normal
-                        ),
-                        color = Color(0xFF64748B)
-                    )
                 }
             } else {
                 // P2P Sharing Device Pairing Pin
