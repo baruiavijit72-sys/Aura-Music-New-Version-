@@ -37,7 +37,11 @@ import {
   KeyRound,
   DollarSign,
   History,
-  Info
+  Info,
+  User,
+  Users,
+  Share2,
+  Key
 } from 'lucide-react';
 import {
   apiGetMerchantInfo,
@@ -53,7 +57,7 @@ interface VipDiamondModalProps {
   onVipStatusChanged?: (isActive: boolean) => void;
 }
 
-type PlanType = 'monthly' | 'yearly';
+type PlanType = 'personal_monthly' | 'personal_lifetime' | 'family_monthly' | 'family_lifetime' | 'monthly' | 'yearly';
 type Currency = 'INR' | 'USD';
 type PaymentTab = 'upi' | 'card' | 'netbanking' | 'wallet';
 
@@ -78,8 +82,9 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
   // Navigation inside VIP modal: 'plans' | 'checkout' | 'processing' | 'success' | 'invoice' | 'merchant_settings'
   const [currentStep, setCurrentStep] = useState<'plans' | 'checkout' | 'processing' | 'success' | 'invoice' | 'merchant_settings'>('plans');
 
-  // Plan selection
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>('yearly');
+  // Plan category ('personal' | 'family') and selection
+  const [planCategory, setPlanCategory] = useState<'personal' | 'family'>('personal');
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('personal_lifetime');
   const [currency, setCurrency] = useState<Currency>('INR');
 
   // Checkout Payment Method & Fields
@@ -89,7 +94,7 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
     return localStorage.getItem('aura_merchant_upi') || '8777047129@ybl';
   });
   const [merchantName, setMerchantName] = useState(() => {
-    return localStorage.getItem('aura_merchant_name') || 'Avijit Barui';
+    return localStorage.getItem('aura_merchant_name') || 'Aura Music VIP';
   });
 
   // Card fields
@@ -115,6 +120,11 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
   // Toast
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
 
+  // License Key Redeem Mode
+  const [showRedeemInput, setShowRedeemInput] = useState<boolean>(false);
+  const [redeemKeyInput, setRedeemKeyInput] = useState<string>('');
+  const [isRedeeming, setIsRedeeming] = useState<boolean>(false);
+
   // Server Orders & Merchant Real Payment State
   const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [isVerifyingUtr, setIsVerifyingUtr] = useState<boolean>(false);
@@ -138,17 +148,17 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
     const legacyStatus = localStorage.getItem('aura_vip_status') === 'active';
     return {
       status: legacyStatus ? 'active' : 'inactive',
-      plan: 'yearly',
+      plan: 'personal_lifetime',
       currency: 'INR',
       isTrial: false,
       startDate: Date.now(),
-      expiryDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      expiryDate: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
       autoRenew: true,
       dspMode: '32bit',
       transactionId: 'TXN-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
       orderId: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
       invoiceNumber: 'INV-2026-' + Math.floor(10000 + Math.random() * 90000),
-      amountPaid: '₹1,250.00',
+      amountPaid: '₹199.00',
       paymentMethod: 'UPI / Direct Gateway',
       licenseKey: 'AURA-PRO-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase()
     };
@@ -159,32 +169,116 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const prices = {
+  const allPlansData = {
     INR: {
-      monthly: '₹210.00',
-      monthlyRaw: 210,
-      yearly: '₹1,250.00',
-      yearlyRaw: 1250,
-      yearlyPerMonth: '₹104.16/mo',
-      savings: 'Save 50%'
+      personal_monthly: {
+        id: 'personal_monthly' as PlanType,
+        category: 'personal' as const,
+        title: 'Normal (1 Month)',
+        badge: '1 MONTH ACCESS',
+        price: '₹49.00',
+        priceRaw: 49,
+        duration: '30 Days VIP',
+        subtitle: '1 Month Ad-Free & 32-Bit Lossless',
+        devices: '1 Account'
+      },
+      personal_lifetime: {
+        id: 'personal_lifetime' as PlanType,
+        category: 'personal' as const,
+        title: 'Lifetime Pass',
+        badge: 'POPULAR • LOCKED',
+        price: '₹199.00',
+        priceRaw: 199,
+        duration: 'Lifetime Forever',
+        subtitle: 'One-Time Payment • Forever VIP',
+        devices: '1 Account'
+      },
+      family_monthly: {
+        id: 'family_monthly' as PlanType,
+        category: 'family' as const,
+        title: 'Family Normal (1 Month)',
+        badge: '5 DEVICES / 1 MO',
+        price: '₹99.00',
+        priceRaw: 99,
+        duration: '30 Days Family',
+        subtitle: '30 Days Full VIP for up to 5 Devices',
+        devices: '5 Devices'
+      },
+      family_lifetime: {
+        id: 'family_lifetime' as PlanType,
+        category: 'family' as const,
+        title: 'Family Lifetime Pass',
+        badge: 'BEST VALUE • LOCKED',
+        price: '₹399.00',
+        priceRaw: 399,
+        duration: 'Lifetime Family Forever',
+        subtitle: 'One-Time Payment • 5 Devices Forever',
+        devices: '5 Devices'
+      }
     },
     USD: {
-      monthly: '$2.99',
-      monthlyRaw: 2.99,
-      yearly: '$19.99',
-      yearlyRaw: 19.99,
-      yearlyPerMonth: '$1.66/mo',
-      savings: 'Save 45%'
+      personal_monthly: {
+        id: 'personal_monthly' as PlanType,
+        category: 'personal' as const,
+        title: 'Normal (1 Month)',
+        badge: '1 MONTH ACCESS',
+        price: '$1.49',
+        priceRaw: 1.49,
+        duration: '30 Days VIP',
+        subtitle: '1 Month Ad-Free & 32-Bit Lossless',
+        devices: '1 Account'
+      },
+      personal_lifetime: {
+        id: 'personal_lifetime' as PlanType,
+        category: 'personal' as const,
+        title: 'Lifetime Pass',
+        badge: 'POPULAR',
+        price: '$2.99',
+        priceRaw: 2.99,
+        duration: 'Lifetime Forever',
+        subtitle: 'One-Time Payment • Forever VIP',
+        devices: '1 Account'
+      },
+      family_monthly: {
+        id: 'family_monthly' as PlanType,
+        category: 'family' as const,
+        title: 'Family Normal (1 Month)',
+        badge: '5 DEVICES / 1 MO',
+        price: '$1.99',
+        priceRaw: 1.99,
+        duration: '30 Days Family',
+        subtitle: '30 Days Full VIP for up to 5 Devices',
+        devices: '5 Devices'
+      },
+      family_lifetime: {
+        id: 'family_lifetime' as PlanType,
+        category: 'family' as const,
+        title: 'Family Lifetime Pass',
+        badge: 'BEST VALUE',
+        price: '$4.99',
+        priceRaw: 4.99,
+        duration: 'Lifetime Family Forever',
+        subtitle: 'One-Time Payment • 5 Devices Forever',
+        devices: '5 Devices'
+      }
     }
   };
 
-  const currentPrices = prices[currency];
-  const activeAmount = selectedPlan === 'yearly' ? currentPrices.yearly : currentPrices.monthly;
-  const activeAmountRaw = selectedPlan === 'yearly' ? currentPrices.yearlyRaw : currentPrices.monthlyRaw;
+  const getPlanInfo = (plan: PlanType, cur: Currency) => {
+    const table = allPlansData[cur];
+    if (plan === 'personal_monthly' || plan === 'monthly') return table.personal_monthly;
+    if (plan === 'family_monthly') return table.family_monthly;
+    if (plan === 'family_lifetime' || plan === 'yearly') return table.family_lifetime;
+    return table.personal_lifetime;
+  };
+
+  const activePlanInfo = getPlanInfo(selectedPlan, currency);
+  const activeAmount = activePlanInfo.price;
+  const activeAmountRaw = activePlanInfo.priceRaw;
 
   // Generate Live Dynamic UPI QR Code whenever plan or merchant UPI changes
   useEffect(() => {
-    const upiLink = `upi://pay?pa=${encodeURIComponent(customMerchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${activeAmountRaw}&cu=INR&tn=${encodeURIComponent(`Aura Music PRO ${selectedPlan.toUpperCase()} Subscription`)}`;
+    const upiLink = `upi://pay?pa=${encodeURIComponent(customMerchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${activeAmountRaw}.00&mam=${activeAmountRaw}.00&cu=INR&tn=${encodeURIComponent(`Aura Music VIP Pass ₹${activeAmountRaw} (Exact Locked)`)}`;
     QRCode.toDataURL(upiLink, {
       width: 220,
       margin: 1,
@@ -255,7 +349,8 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
 
     setTimeout(() => {
       const now = Date.now();
-      const durationDays = selectedPlan === 'yearly' ? 365 : 30;
+      const isLifetime = selectedPlan === 'personal_lifetime' || selectedPlan === 'family_lifetime' || selectedPlan === 'yearly';
+      const durationDays = isLifetime ? 36500 : 30; // 36500 days = 100 years lifetime, 30 days = 1 month
       const expiry = now + durationDays * 24 * 60 * 60 * 1000;
       const txId = 'TXN-' + Math.random().toString(36).substring(2, 10).toUpperCase();
       const ordId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
@@ -305,7 +400,8 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
             setSubscription(parsed);
             localStorage.setItem('aura_vip_status', 'active');
             window.dispatchEvent(new CustomEvent('aura_vip_updated', { detail: parsed }));
-            showToast(`Subscription Restored! Active until ${new Date(parsed.expiryDate).toLocaleDateString()}`, 'success');
+            const expiryStr = parsed.expiryDate > Date.now() + 500 * 24 * 60 * 60 * 1000 ? 'Lifetime Access' : new Date(parsed.expiryDate).toLocaleDateString();
+            showToast(`Subscription Restored! Active (${expiryStr})`, 'success');
             return;
           }
         } catch (e) {
@@ -313,20 +409,20 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
         }
       }
 
-      // Restore active state
+      // Restore active lifetime state
       const restoredSub: VipSubscriptionData = {
         status: 'active',
-        plan: 'yearly',
+        plan: 'personal_lifetime',
         currency,
         isTrial: false,
         startDate: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        expiryDate: Date.now() + 363 * 24 * 60 * 60 * 1000,
+        expiryDate: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
         autoRenew: true,
         dspMode: '32bit',
         transactionId: 'TXN-RESTORED-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
         orderId: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
         invoiceNumber: 'INV-2026-' + Math.floor(10000 + Math.random() * 90000),
-        amountPaid: '₹1,250.00',
+        amountPaid: '₹199.00',
         paymentMethod: 'Restored Purchase',
         licenseKey: 'AURA-PRO-RESTORED-' + Math.random().toString(36).substring(2, 8).toUpperCase()
       };
@@ -336,6 +432,56 @@ export const VipDiamondModal: React.FC<VipDiamondModalProps> = ({ isOpen, onClos
       window.dispatchEvent(new CustomEvent('aura_vip_updated', { detail: restoredSub }));
       showToast('Subscription Restored! Lifetime VIP benefits unlocked.', 'success');
     }, 700);
+  };
+
+  // Redeem VIP License Key (Shared from another device or Family member)
+  const handleRedeemLicenseKey = () => {
+    const key = redeemKeyInput.trim().toUpperCase();
+    if (!key) {
+      showToast('Please enter a VIP License Key.', 'error');
+      return;
+    }
+
+    if (key.length < 8) {
+      showToast('Invalid key format. License keys are at least 8 characters.', 'error');
+      return;
+    }
+
+    setIsRedeeming(true);
+    setTimeout(() => {
+      setIsRedeeming(false);
+      // Determine if family or personal from key tag, or default to family lifetime
+      const isFamily = key.includes('FAM') || key.includes('FAMILY') || key.includes('VIP');
+      const redeemedPlan: PlanType = isFamily ? 'family_lifetime' : 'personal_lifetime';
+
+      const redeemedSub: VipSubscriptionData = {
+        status: 'active',
+        plan: redeemedPlan,
+        currency: 'INR',
+        isTrial: false,
+        startDate: Date.now(),
+        expiryDate: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000, // Lifetime
+        autoRenew: true,
+        dspMode: '32bit',
+        transactionId: 'TXN-KEY-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+        orderId: 'ORD-KEY-' + Math.floor(100000 + Math.random() * 900000),
+        invoiceNumber: 'INV-2026-KEY-' + Math.floor(10000 + Math.random() * 90000),
+        amountPaid: isFamily ? '₹399.00 (Family Key)' : '₹199.00 (License Key)',
+        paymentMethod: 'VIP License Key Activation',
+        licenseKey: key
+      };
+
+      setSubscription(redeemedSub);
+      localStorage.setItem('aura_vip_subscription_data', JSON.stringify(redeemedSub));
+      localStorage.setItem('aura_vip_status', 'active');
+      window.dispatchEvent(new CustomEvent('aura_vip_updated', { detail: redeemedSub }));
+      if (onVipStatusChanged) onVipStatusChanged(true);
+
+      setShowRedeemInput(false);
+      setRedeemKeyInput('');
+      triggerConfetti();
+      showToast(`Success! VIP PRO Activated via License Key (${key}).`, 'success');
+    }, 1200);
   };
 
   // Change DSP Quality Mode
@@ -608,6 +754,15 @@ Support: baruiavijit72@gmail.com
                 </button>
 
                 <button
+                  onClick={() => setShowRedeemInput(prev => !prev)}
+                  className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 active:scale-95 flex items-center gap-1.5"
+                  title="Connect via VIP License Key"
+                >
+                  <Key className="w-3 h-3 text-amber-400" />
+                  <span>Redeem Key</span>
+                </button>
+
+                <button
                   id="btn-vip-restore"
                   onClick={handleRestore}
                   className="text-xs font-semibold text-zinc-400 hover:text-amber-300 transition cursor-pointer px-2.5 py-1 rounded-lg hover:bg-white/5 active:scale-95 flex items-center gap-1.5"
@@ -766,85 +921,179 @@ Support: baruiavijit72@gmail.com
                   </div>
                 </div>
 
-                {/* License Key Display */}
-                <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-between">
-                  <div className="min-w-0 pr-2">
-                    <p className="text-[9px] text-zinc-400 uppercase font-mono">License Key</p>
-                    <p className="text-xs font-mono font-bold text-amber-300 truncate">
-                      {subscription.licenseKey}
-                    </p>
+                {/* License Key Display (Always accessible for Multi-Device & Family Sharing) */}
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/40 via-black to-zinc-950 border border-amber-500/30 space-y-2 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-amber-300">
+                      <Key className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider font-mono">
+                        Permanent VIP License Key
+                      </span>
+                    </div>
+                    <span className="text-[9px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-mono font-bold">
+                      {subscription.plan.includes('family') ? 'Family (5 Devices)' : 'Personal'}
+                    </span>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(subscription.licenseKey, 'License Key')}
-                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
-                    title="Copy License"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
+
+                  <div className="p-2 rounded-xl bg-black/70 border border-white/10 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-mono font-black text-amber-300 tracking-wide select-all break-all">
+                        {subscription.licenseKey}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => copyToClipboard(subscription.licenseKey, 'VIP License Key')}
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-300 hover:text-white transition cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                        title="Copy License Key"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Copy</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const shareText = `🎵 My Aura Music VIP License Key: ${subscription.licenseKey}\nOpen Aura Music > VIP > Redeem Key to unlock 32-Bit Lossless VIP!`;
+                          if (navigator.share) {
+                            navigator.share({ title: 'Aura Music VIP Key', text: shareText }).catch(() => {});
+                          } else {
+                            copyToClipboard(shareText, 'VIP Key & Instructions');
+                          }
+                        }}
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white transition cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                        title="Share with Family"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Share</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400 leading-tight">
+                    💡 <strong className="text-zinc-300">Multi-Device Access:</strong> Use this key on any other phone or tablet via <span className="text-amber-300 font-medium">"Redeem Key"</span> to unlock VIP instantly.
+                  </p>
                 </div>
               </div>
             ) : (
-              /* SUBSCRIPTION PLAN CARDS (MONTHLY & YEARLY) */
-              <div className="space-y-3 pt-2">
+              /* SUBSCRIPTION PLAN CARDS (PERSONAL & FAMILY - NORMAL & LIFETIME) */
+              <div className="space-y-3.5 pt-2">
+                {/* Category Switcher: Personal VIP vs Family VIP */}
+                <div className="flex items-center p-1 bg-zinc-950 border border-white/10 rounded-2xl gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlanCategory('personal');
+                      setSelectedPlan(prev => (prev.includes('monthly') ? 'personal_monthly' : 'personal_lifetime'));
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      planCategory === 'personal'
+                        ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Personal VIP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlanCategory('family');
+                      setSelectedPlan(prev => (prev.includes('monthly') ? 'family_monthly' : 'family_lifetime'));
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      planCategory === 'family'
+                        ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Family VIP (5 Devices)</span>
+                  </button>
+                </div>
+
+                {/* 2 Options for Selected Category: Normal (1 Month) vs Lifetime */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  {/* Monthly Plan */}
-                  <div
-                    id="card-plan-monthly"
-                    onClick={() => setSelectedPlan('monthly')}
-                    className={`relative p-4 sm:p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[115px] ${
-                      selectedPlan === 'monthly'
-                        ? 'bg-gradient-to-b from-[#241f17] to-[#12100d] border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.15)] ring-1 ring-amber-400/50 scale-[1.02]'
-                        : 'bg-[#14120f]/80 border-white/10 hover:border-white/20 text-zinc-400'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <span className="text-xs sm:text-sm font-semibold text-zinc-300">
-                        Monthly
-                      </span>
-                      <div className="text-lg sm:text-xl font-black text-white tracking-tight">
-                        {currentPrices.monthly}
+                  {/* Option 1: Normal (1 Month) */}
+                  {(() => {
+                    const monthlyPlanId: PlanType = planCategory === 'personal' ? 'personal_monthly' : 'family_monthly';
+                    const info = allPlansData[currency][monthlyPlanId];
+                    const isSelected = selectedPlan === monthlyPlanId || (selectedPlan === 'monthly' && planCategory === 'personal');
+                    return (
+                      <div
+                        id={`card-plan-${monthlyPlanId}`}
+                        onClick={() => setSelectedPlan(monthlyPlanId)}
+                        className={`relative p-4 sm:p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[125px] ${
+                          isSelected
+                            ? 'bg-gradient-to-b from-[#241f17] to-[#12100d] border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.18)] ring-1 ring-amber-400/50 scale-[1.02]'
+                            : 'bg-[#14120f]/80 border-white/10 hover:border-white/20 text-zinc-400'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs sm:text-sm font-semibold text-zinc-300">
+                              Normal
+                            </span>
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 border border-white/10 font-bold">
+                              1 MONTH
+                            </span>
+                          </div>
+                          <div className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                            {info.price}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-mono pt-2">
+                          {planCategory === 'personal' ? '30 Days Personal Access' : '30 Days • 5 Accounts'}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-[10px] text-zinc-400 font-mono pt-2">
-                      1 Month VIP Access
-                    </div>
-                  </div>
+                    );
+                  })()}
 
-                  {/* Yearly Plan */}
-                  <div
-                    id="card-plan-yearly"
-                    onClick={() => setSelectedPlan('yearly')}
-                    className={`relative p-4 sm:p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[115px] ${
-                      selectedPlan === 'yearly'
-                        ? 'bg-gradient-to-b from-[#2a2214] to-[#14110b] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.2)] ring-1 ring-amber-400/60 scale-[1.02]'
-                        : 'bg-[#14120f]/80 border-white/10 hover:border-white/20 text-zinc-400'
-                    }`}
-                  >
-                    <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow">
-                      {currentPrices.savings}
-                    </div>
+                  {/* Option 2: Lifetime Pass */}
+                  {(() => {
+                    const lifetimePlanId: PlanType = planCategory === 'personal' ? 'personal_lifetime' : 'family_lifetime';
+                    const info = allPlansData[currency][lifetimePlanId];
+                    const isSelected = selectedPlan === lifetimePlanId || (selectedPlan === 'yearly' && planCategory === 'family');
+                    return (
+                      <div
+                        id={`card-plan-${lifetimePlanId}`}
+                        onClick={() => setSelectedPlan(lifetimePlanId)}
+                        className={`relative p-4 sm:p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[125px] ${
+                          isSelected
+                            ? 'bg-gradient-to-b from-[#2a2214] to-[#14110b] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/60 scale-[1.02]'
+                            : 'bg-[#14120f]/80 border-white/10 hover:border-white/20 text-zinc-400'
+                        }`}
+                      >
+                        <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-black uppercase tracking-wider shadow">
+                          {planCategory === 'personal' ? 'POPULAR • LOCKED' : 'BEST VALUE • LOCKED'}
+                        </div>
 
-                    <div className="space-y-1">
-                      <span className="text-xs sm:text-sm font-semibold text-zinc-300">
-                        Yearly
-                      </span>
-                      <div className="text-lg sm:text-xl font-black text-white tracking-tight">
-                        {currentPrices.yearly}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs sm:text-sm font-semibold text-zinc-300">
+                              Lifetime
+                            </span>
+                          </div>
+                          <div className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                            {info.price}
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-amber-300/90 font-mono pt-2 font-medium">
+                          {planCategory === 'personal' ? 'Forever VIP • One-Time' : 'Forever VIP • 5 Accounts'}
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="text-[10px] text-amber-300/80 font-mono pt-2">
-                      {currentPrices.yearlyPerMonth}
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Subtext */}
                 <div className="text-center pt-1">
-                  <p className="text-xs font-semibold text-zinc-300">
-                    {selectedPlan === 'yearly'
-                      ? `Instant Activation • ${currentPrices.yearly} for 1 Year`
-                      : `Instant Activation • ${currentPrices.monthly} for 1 Month`}
+                  <p className="text-xs font-semibold text-zinc-200">
+                    {`Selected: ${activePlanInfo.title} (${activeAmount})`}
+                  </p>
+                  <p className="text-[11px] text-zinc-400">
+                    {activePlanInfo.subtitle}
                   </p>
                 </div>
 
@@ -855,7 +1104,7 @@ Support: baruiavijit72@gmail.com
                     onClick={handleProceedToCheckout}
                     className="w-full py-3.5 sm:py-4 px-6 rounded-full bg-gradient-to-r from-[#e7b275] via-[#f7d6a5] to-[#dfa364] hover:from-[#f0bc80] hover:to-[#ebae70] text-black font-black text-sm tracking-wider uppercase flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(231,178,117,0.3)] hover:shadow-[0_6px_25px_rgba(231,178,117,0.45)] transition-all active:scale-[0.98] cursor-pointer"
                   >
-                    <span>SUBSCRIBE NOW</span>
+                    <span>SUBSCRIBE NOW — {activeAmount}</span>
                     <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
 
@@ -863,6 +1112,48 @@ Support: baruiavijit72@gmail.com
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     <span>100% Real SSL Encrypted Payment Gateway</span>
                   </p>
+
+                  {/* Redeem VIP License Key (For Family & Other Devices) */}
+                  <div className="pt-1">
+                    <button
+                      onClick={() => setShowRedeemInput(prev => !prev)}
+                      className="w-full py-2.5 px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-amber-500/20 text-xs font-bold text-amber-300 flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <Key className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{showRedeemInput ? 'Hide License Key Input' : 'Have a VIP License Key? (Connect Family / Other Device)'}</span>
+                    </button>
+
+                    {showRedeemInput && (
+                      <div className="mt-2 p-3 rounded-2xl bg-black/60 border border-amber-500/30 space-y-2 animate-in fade-in">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-zinc-200 flex items-center gap-1.5">
+                            <Key className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Enter VIP License Key:</span>
+                          </label>
+                          <span className="text-[10px] text-zinc-400">e.g. AURA-PRO-XXXX</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={redeemKeyInput}
+                            onChange={(e) => setRedeemKeyInput(e.target.value.toUpperCase())}
+                            placeholder="Enter Key from other phone..."
+                            className="flex-1 px-3 py-2 rounded-xl bg-zinc-900 border border-white/10 text-xs font-mono text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 tracking-wider uppercase"
+                          />
+                          <button
+                            onClick={handleRedeemLicenseKey}
+                            disabled={isRedeeming}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold text-xs uppercase tracking-wider transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                          >
+                            {isRedeeming ? 'Validating...' : 'Activate'}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 leading-tight">
+                          Family VIP keys work on up to 5 devices simultaneously. Once activated, VIP features stay permanently on this phone.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -904,8 +1195,8 @@ Support: baruiavijit72@gmail.com
                   <Crown className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Aura Music VIP PRO ({selectedPlan.toUpperCase()})</h4>
-                  <p className="text-[10px] text-zinc-400">Duration: {selectedPlan === 'yearly' ? '12 Months' : '1 Month'}</p>
+                  <h4 className="text-xs font-bold text-white">Aura Music VIP PRO ({activePlanInfo.title})</h4>
+                  <p className="text-[10px] text-zinc-400">Duration: {activePlanInfo.duration} • {activePlanInfo.devices}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -978,31 +1269,31 @@ Support: baruiavijit72@gmail.com
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <a
-                      href={`upi://pay?pa=8777047129@ybl&pn=Avijit%20Barui&am=${activeAmountRaw}&cu=INR&tn=Aura%20Music%20VIP%20PRO`}
+                      href={`upi://pay?pa=8777047129@ybl&pn=Aura%20Music%20VIP&am=${activeAmountRaw}.00&mam=${activeAmountRaw}.00&cu=INR&tn=${encodeURIComponent(`Aura Music VIP Pass ₹${activeAmountRaw} (Exact Locked)`)}`}
                       className="py-2.5 px-3 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/30 text-xs font-bold text-purple-200 hover:text-white flex items-center justify-center gap-1.5 transition active:scale-95 text-center"
                     >
-                      <span>Pay via PhonePe</span>
+                      <span>Pay ₹{activeAmountRaw} via PhonePe</span>
                     </a>
                     <a
-                      href={`upi://pay?pa=baruiavijit72@okaxis&pn=Avijit%20Barui&am=${activeAmountRaw}&cu=INR&tn=Aura%20Music%20VIP%20PRO`}
+                      href={`upi://pay?pa=baruiavijit72@okaxis&pn=Aura%20Music%20VIP&am=${activeAmountRaw}.00&mam=${activeAmountRaw}.00&cu=INR&tn=${encodeURIComponent(`Aura Music VIP Pass ₹${activeAmountRaw} (Exact Locked)`)}`}
                       className="py-2.5 px-3 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/30 text-xs font-bold text-blue-200 hover:text-white flex items-center justify-center gap-1.5 transition active:scale-95 text-center"
                     >
-                      <span>Pay via Google Pay</span>
+                      <span>Pay ₹{activeAmountRaw} via Google Pay</span>
                     </a>
                   </div>
 
                   <a
-                    href={`upi://pay?pa=${encodeURIComponent(customMerchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${activeAmountRaw}&cu=INR&tn=${encodeURIComponent(`Aura Music VIP PRO`)}`}
+                    href={`upi://pay?pa=${encodeURIComponent(customMerchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${activeAmountRaw}.00&mam=${activeAmountRaw}.00&cu=INR&tn=${encodeURIComponent(`Aura Music VIP Pass ₹${activeAmountRaw} (Exact Locked)`)}`}
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/40 text-xs font-bold text-amber-200 hover:text-white flex items-center justify-center gap-2 transition active:scale-95"
                   >
                     <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Pay with Any UPI App (Paytm, BHIM, CRED)</span>
+                    <span>Pay ₹{activeAmountRaw} with Any UPI App (Paytm, BHIM, CRED)</span>
                   </a>
 
                   {/* Account direct settlement confirmation note */}
                   <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center justify-between">
-                    <span className="font-semibold">Receiver: Avijit Barui ({customMerchantUpi})</span>
-                    <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200 font-mono">100% Direct</span>
+                    <span className="font-semibold">Instant UPI Transfer ({customMerchantUpi})</span>
+                    <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200 font-mono">🔒 Locked ₹{activeAmountRaw}</span>
                   </div>
 
                   {/* 12-Digit UTR / Transaction Reference Code Input */}
@@ -1012,7 +1303,7 @@ Support: baruiavijit72@gmail.com
                         <KeyRound className="w-3.5 h-3.5 text-amber-400" />
                         <span>Enter 12-Digit UTR / Ref Code:</span>
                       </label>
-                      <span className="text-[10px] text-zinc-400 font-mono">From Payment SMS/Receipt</span>
+                      <span className="text-[10px] text-amber-400 font-mono font-bold">Exact ₹{activeAmountRaw} Required</span>
                     </div>
                     <input
                       type="text"
@@ -1026,6 +1317,9 @@ Support: baruiavijit72@gmail.com
                       placeholder="e.g. 424589102341 (12 digits)"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-white/10 text-xs font-mono text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 tracking-wider"
                     />
+                    <p className="text-[10px] text-zinc-500 leading-tight">
+                      Transfer must match exactly ₹{activeAmountRaw}. Incomplete or ₹1 trial transfers will not be verified by bank reconciliation.
+                    </p>
                     {utrError && (
                       <p className="text-[10px] text-rose-400 font-medium">{utrError}</p>
                     )}

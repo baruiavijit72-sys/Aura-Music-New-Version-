@@ -19,7 +19,14 @@ import {
   Gauge, 
   Zap, 
   Check,
-  Gem
+  Gem,
+  Disc,
+  Square,
+  Circle,
+  Hexagon,
+  Waves,
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { Track, PlaybackMode, EqualizerSettings } from '../types';
 import { LyricsView } from './LyricsView';
@@ -74,7 +81,29 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
 }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showSpeedDialog, setShowSpeedDialog] = useState(false);
+  const [artShape, setArtShape] = useState<'vinyl' | 'card' | 'halo' | 'cyber'>(() => {
+    return (localStorage.getItem('aura_player_shape') as any) || 'vinyl';
+  });
+  const [visualizerStyle, setVisualizerStyle] = useState<'bars' | 'wave' | 'dots'>(() => {
+    return (localStorage.getItem('aura_viz_style') as any) || 'bars';
+  });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const handleSelectShape = (shape: 'vinyl' | 'card' | 'halo' | 'cyber') => {
+    setArtShape(shape);
+    localStorage.setItem('aura_player_shape', shape);
+  };
+
+  const handleToggleVizStyle = () => {
+    const nextStyle: Record<'bars' | 'wave' | 'dots', 'bars' | 'wave' | 'dots'> = {
+      bars: 'wave',
+      wave: 'dots',
+      dots: 'bars'
+    };
+    const updated = nextStyle[visualizerStyle];
+    setVisualizerStyle(updated);
+    localStorage.setItem('aura_viz_style', updated);
+  };
 
   // Format seconds to mm:ss
   const formatTime = (sec: number) => {
@@ -97,26 +126,63 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
       audioEngine.getVisualizerData(dataArray);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const barWidth = (canvas.width / 32);
-      let x = 0;
 
-      for (let i = 0; i < 32; i++) {
-        // Fallback pulsing if web audio buffer synthetic
-        const value = isPlaying ? (dataArray[i] > 0 ? dataArray[i] : Math.sin(Date.now() / 200 + i) * 30 + 50) : 10;
-        const percent = Math.min(1, value / 255);
-        const barHeight = Math.max(4, percent * canvas.height);
+      if (visualizerStyle === 'bars') {
+        const barWidth = (canvas.width / 32);
+        let x = 0;
+        for (let i = 0; i < 32; i++) {
+          const value = isPlaying ? (dataArray[i] > 0 ? dataArray[i] : Math.sin(Date.now() / 200 + i) * 30 + 50) : 10;
+          const percent = Math.min(1, value / 255);
+          const barHeight = Math.max(4, percent * canvas.height);
 
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, '#6366f1');
-        gradient.addColorStop(0.5, '#a855f7');
-        gradient.addColorStop(1, '#ec4899');
+          const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+          gradient.addColorStop(0, '#6366f1');
+          gradient.addColorStop(0.5, '#a855f7');
+          gradient.addColorStop(1, '#ec4899');
 
-        ctx.fillStyle = gradient;
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.roundRect(x, (canvas.height - barHeight) / 2, barWidth - 3, barHeight, 3);
+          ctx.fill();
+
+          x += barWidth;
+        }
+      } else if (visualizerStyle === 'wave') {
         ctx.beginPath();
-        ctx.roundRect(x, (canvas.height - barHeight) / 2, barWidth - 3, barHeight, 3);
-        ctx.fill();
+        const sliceWidth = canvas.width / 32;
+        let x = 0;
+        for (let i = 0; i < 32; i++) {
+          const val = isPlaying ? (dataArray[i] > 0 ? dataArray[i] : Math.sin(Date.now() / 250 + i * 0.5) * 40 + 128) : 128;
+          const y = (val / 255) * (canvas.height - 8) + 4;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+          x += sliceWidth;
+        }
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#0284c7';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else if (visualizerStyle === 'dots') {
+        const step = canvas.width / 24;
+        for (let i = 0; i < 24; i++) {
+          const val = isPlaying ? (dataArray[i * 2] || 35) : 15;
+          const pulse = isPlaying ? Math.sin(Date.now() / 200 + i * 0.6) * 6 : 0;
+          const yOffset = (canvas.height / 2) + pulse;
+          const radius = Math.max(2.5, (val / 255) * 5.5);
 
-        x += barWidth;
+          ctx.beginPath();
+          ctx.arc(i * step + step / 2, yOffset, radius, 0, Math.PI * 2);
+          ctx.fillStyle = i % 2 === 0 ? '#ec4899' : '#a855f7';
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#ec4899';
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       }
 
       animFrame = requestAnimationFrame(render);
@@ -124,7 +190,7 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
 
     render();
     return () => cancelAnimationFrame(animFrame);
-  }, [isPlaying]);
+  }, [isPlaying, visualizerStyle]);
 
   if (!isOpen || !track) return null;
 
@@ -199,31 +265,211 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
             />
           ) : (
             <div className="flex flex-col items-center">
-              {/* Album Art Card */}
-              <div 
-                className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl shadow-2xl flex items-center justify-center relative overflow-hidden transition-transform duration-500 hover:scale-105"
-                style={{
-                  background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
-                }}
-              >
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
-                <div className="text-center p-4 relative z-10">
-                  <span className="text-5xl font-black text-white/40 tracking-tighter">AURA</span>
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 border border-white/20 backdrop-blur-md">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format}</span>
-                  </div>
-                </div>
+              {/* Interactive Player Shape & Design Theme Switcher */}
+              <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl mb-4 shadow-inner">
+                <button
+                  onClick={() => handleSelectShape('vinyl')}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                    artShape === 'vinyl'
+                      ? 'bg-amber-400 text-black shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Spinning Vinyl LP Record"
+                >
+                  <Disc className={`w-3.5 h-3.5 ${isPlaying && artShape === 'vinyl' ? 'animate-spin' : ''}`} />
+                  <span>Vinyl</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectShape('card')}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                    artShape === 'card'
+                      ? 'bg-indigo-600 text-white shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Modern Studio Card"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Card</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectShape('halo')}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                    artShape === 'halo'
+                      ? 'bg-pink-600 text-white shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Pulsing Halo Disc"
+                >
+                  <Circle className="w-3.5 h-3.5" />
+                  <span>Halo</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectShape('cyber')}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                    artShape === 'cyber'
+                      ? 'bg-cyan-500 text-black shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Cyber Hexagon Diamond"
+                >
+                  <Hexagon className="w-3.5 h-3.5" />
+                  <span>Cyber</span>
+                </button>
               </div>
 
-              {/* Waveform Visualizer Canvas */}
-              <div className="w-full max-w-sm mt-5">
-                <canvas 
-                  ref={canvasRef} 
-                  width={320} 
-                  height={36} 
-                  className="w-full h-9 rounded-xl opacity-90"
-                />
+              {/* SHAPE 1: VINYL LP RECORD (ঘূর্ণায়মান ভিনাইল ডিস্ক) */}
+              {artShape === 'vinyl' && (
+                <div className="relative flex items-center justify-center my-2">
+                  {/* Turntable Stylus / Tonearm Indicator */}
+                  <div 
+                    className={`absolute -top-3 -right-2 z-20 transition-all duration-700 origin-top-right pointer-events-none ${
+                      isPlaying ? 'rotate-6 translate-x-1' : '-rotate-12 opacity-60'
+                    }`}
+                  >
+                    <div className="w-1.5 h-16 bg-gradient-to-b from-zinc-200 via-zinc-400 to-zinc-600 rounded-full shadow-lg" />
+                    <div className="w-4 h-5 bg-amber-400 rounded-sm -ml-1.5 -mt-1 shadow-md border border-amber-300 flex items-center justify-center">
+                      <div className="w-1 h-1 bg-red-500 rounded-full" />
+                    </div>
+                  </div>
+
+                  {/* 360° Rotating Vinyl Disc */}
+                  <div 
+                    className={`w-56 h-56 sm:w-64 sm:h-64 rounded-full bg-[#0a0c10] border-4 border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.85)] relative flex items-center justify-center transition-all ${
+                      isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
+                    }`}
+                    style={{
+                      boxShadow: `0 0 35px ${track.coverGradient[0]}33, 0 20px 40px rgba(0,0,0,0.9)`
+                    }}
+                  >
+                    {/* Concentric Audio Grooves */}
+                    <div className="absolute inset-3 rounded-full border border-white/5 pointer-events-none" />
+                    <div className="absolute inset-6 rounded-full border border-white/5 pointer-events-none" />
+                    <div className="absolute inset-10 rounded-full border border-white/5 pointer-events-none" />
+                    <div className="absolute inset-14 rounded-full border border-white/10 pointer-events-none" />
+                    
+                    {/* Opposing Radial Light Reflections */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/[0.04] via-transparent to-white/[0.04] pointer-events-none" />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/[0.03] via-transparent to-white/[0.03] pointer-events-none" />
+
+                    {/* Center Album Art Label */}
+                    <div 
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full shadow-inner flex flex-col items-center justify-center relative overflow-hidden border-2 border-zinc-700/60"
+                      style={{
+                        background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+                      <span className="text-xl sm:text-2xl font-black text-white/95 tracking-tighter relative z-10">AURA</span>
+                      <span className="text-[8px] font-bold text-amber-300 uppercase tracking-widest relative z-10">{track.format}</span>
+                      
+                      {/* Spindle Center Hole */}
+                      <div className="w-5 h-5 rounded-full bg-zinc-950 border-2 border-zinc-400 shadow-inner mt-1 relative z-10 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SHAPE 2: MODERN STUDIO CARD (মডার্ন স্টুডিও কার্ড) */}
+              {artShape === 'card' && (
+                <div 
+                  className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-500 hover:scale-105 my-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`,
+                    boxShadow: `0 20px 45px ${track.coverGradient[0]}44, 0 10px 25px rgba(0,0,0,0.8)`
+                  }}
+                >
+                  <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+                  <div className="text-center p-4 relative z-10">
+                    <span className="text-5xl font-black text-white/40 tracking-tighter">AURA</span>
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 border border-white/20 backdrop-blur-md">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SHAPE 3: PULSING HALO DISC (সার্কুলার নিয়ন রিং) */}
+              {artShape === 'halo' && (
+                <div className="relative flex items-center justify-center my-2">
+                  <div 
+                    className={`absolute -inset-3 rounded-full opacity-60 blur-md transition-all pointer-events-none ${
+                      isPlaying ? 'animate-pulse' : 'opacity-20'
+                    }`}
+                    style={{
+                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                    }}
+                  />
+                  <div 
+                    className="w-56 h-56 sm:w-64 sm:h-64 rounded-full shadow-2xl flex items-center justify-center relative overflow-hidden border-2 border-white/20"
+                    style={{
+                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+                    <div className="text-center p-4 relative z-10">
+                      <span className="text-5xl font-black text-white/50 tracking-tighter">AURA</span>
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 border border-white/20 backdrop-blur-md">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SHAPE 4: CYBER HEXAGON / DIAMOND (সাইবার জ্যামিতিক হেক্সাগন) */}
+              {artShape === 'cyber' && (
+                <div className="relative flex items-center justify-center my-2">
+                  <div 
+                    className="w-56 h-56 sm:w-64 sm:h-64 shadow-2xl flex items-center justify-center relative transition-all"
+                    style={{
+                      clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`,
+                      boxShadow: `0 0 40px ${track.coverGradient[1]}55`
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+                    <div className="text-center p-4 relative z-10">
+                      <div className="px-2 py-0.5 rounded bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono font-bold uppercase mb-1">
+                        CYBER ACOUSTIC
+                      </div>
+                      <span className="text-4xl sm:text-5xl font-black text-white/70 tracking-tighter">AURA</span>
+                      <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/20">
+                        <Zap className="w-3 h-3 text-amber-400" />
+                        <span className="text-[10px] font-bold text-white font-mono uppercase">{track.format} • 96kHz</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Waveform Visualizer Canvas with Mode Toggler */}
+              <div className="w-full max-w-sm mt-3 flex flex-col items-center">
+                <div 
+                  onClick={handleToggleVizStyle}
+                  className="w-full cursor-pointer group relative"
+                  title="Click to toggle visualizer mode (Bars / Wave / Dots)"
+                >
+                  <canvas 
+                    ref={canvasRef} 
+                    width={320} 
+                    height={36} 
+                    className="w-full h-9 rounded-xl opacity-90 transition-opacity group-hover:opacity-100"
+                  />
+                  <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 mt-1 px-1">
+                    <span className="flex items-center gap-1 text-zinc-400 group-hover:text-amber-300 transition">
+                      <Activity className="w-2.5 h-2.5" />
+                      <span className="capitalize">{visualizerStyle} Visualizer</span>
+                    </span>
+                    <span className="text-zinc-600 group-hover:text-zinc-400 transition">Tap to change style</span>
+                  </div>
+                </div>
               </div>
 
               {/* Track Title & Artist */}

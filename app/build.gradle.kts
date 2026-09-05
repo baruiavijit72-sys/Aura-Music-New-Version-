@@ -75,6 +75,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
+  implementation("com.google.zxing:core:3.5.3")
 
   debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -52,9 +52,21 @@ interface RealAdBannerProps {
 
 export const RealAdBanner: React.FC<RealAdBannerProps> = ({ slotIndex = 0, className = '' }) => {
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isVip] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aura_vip_subscription_data');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.status === 'active' && parsed.expiryDate > Date.now();
+      }
+    } catch {}
+    return false;
+  });
+
   const ad = SPONSORED_ADS[slotIndex % SPONSORED_ADS.length];
 
-  if (isDismissed) return null;
+  // VIP Members have zero ads across the entire app
+  if (isVip || isDismissed) return null;
 
   return (
     <div 

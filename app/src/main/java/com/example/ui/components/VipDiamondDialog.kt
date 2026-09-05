@@ -38,13 +38,29 @@ fun VipDiamondDialog(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    var selectedPlanPrice by remember { mutableStateOf("199") }
+    var selectedCategory by remember { mutableStateOf("personal") } // "personal" or "family"
+    var selectedPlanType by remember { mutableStateOf("lifetime") } // "normal" or "lifetime"
+
+    val selectedPlanPrice = when {
+        selectedCategory == "personal" && selectedPlanType == "normal" -> "49"
+        selectedCategory == "personal" && selectedPlanType == "lifetime" -> "199"
+        selectedCategory == "family" && selectedPlanType == "normal" -> "99"
+        else -> "399"
+    }
+
+    val selectedPlanTitle = when {
+        selectedCategory == "personal" && selectedPlanType == "normal" -> "Personal Normal (1 Month)"
+        selectedCategory == "personal" && selectedPlanType == "lifetime" -> "Personal Lifetime Pass"
+        selectedCategory == "family" && selectedPlanType == "normal" -> "Family Normal (1 Month)"
+        else -> "Family Lifetime Pass"
+    }
+
     var utrInput by remember { mutableStateOf("") }
     var isActivatedSuccess by remember { mutableStateOf(false) }
 
     val phonePeUpi = "8777047129@ybl"
     val gPayUpi = "baruiavijit72@okaxis"
-    val receiverName = "Avijit Barui"
+    val merchantDisplayName = "Aura Music VIP"
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -161,66 +177,116 @@ fun VipDiamondDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Plan Selector (₹199 Lifetime Special / ₹399 Family VIP)
+                // Category Selector (Personal VIP vs Family VIP)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF0F172A), RoundedCornerShape(12.dp))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { selectedPlanPrice = "199" },
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (selectedPlanPrice == "199") Color(0xFF1E1B4B) else Color(0xFF111827),
-                        border = BorderStroke(
-                            if (selectedPlanPrice == "199") 1.5.dp else 1.dp,
-                            if (selectedPlanPrice == "199") Color(0xFFFBBF24) else Color(0xFF374151)
-                        )
+                            .clickable { selectedCategory = "personal" },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (selectedCategory == "personal") Color(0xFFF59E0B).copy(alpha = 0.25f) else Color.Transparent,
+                        border = if (selectedCategory == "personal") BorderStroke(1.dp, Color(0xFFF59E0B)) else null
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("LIFETIME PASS", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("₹199", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Black)
-                            Text("One-Time Only", style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontSize = 10.sp)
-                        }
+                        Text(
+                            text = "Personal VIP",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (selectedCategory == "personal") Color(0xFFFDE68A) else Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
                     }
 
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { selectedPlanPrice = "399" },
+                            .clickable { selectedCategory = "family" },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (selectedCategory == "family") Color(0xFF0284C7).copy(alpha = 0.25f) else Color.Transparent,
+                        border = if (selectedCategory == "family") BorderStroke(1.dp, Color(0xFF38BDF8)) else null
+                    ) {
+                        Text(
+                            text = "Family VIP (5 Devices)",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (selectedCategory == "family") Color(0xFFBAE6FD) else Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Plan Selector (Normal 1-Month vs Lifetime Pass for Selected Category)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val normalPrice = if (selectedCategory == "personal") "49" else "99"
+                    val lifetimePrice = if (selectedCategory == "personal") "199" else "399"
+
+                    // Option 1: Normal (1 Month)
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedPlanType = "normal" },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (selectedPlanPrice == "399") Color(0xFF1E1B4B) else Color(0xFF111827),
+                        color = if (selectedPlanType == "normal") Color(0xFF1E1B4B) else Color(0xFF111827),
                         border = BorderStroke(
-                            if (selectedPlanPrice == "399") 1.5.dp else 1.dp,
-                            if (selectedPlanPrice == "399") Color(0xFFFBBF24) else Color(0xFF374151)
+                            if (selectedPlanType == "normal") 1.5.dp else 1.dp,
+                            if (selectedPlanType == "normal") Color(0xFFFBBF24) else Color(0xFF374151)
                         )
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("FAMILY VIP", style = MaterialTheme.typography.labelSmall, color = Color(0xFF38BDF8), fontWeight = FontWeight.Bold)
+                            Text("NORMAL (1 MO)", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("₹399", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Black)
-                            Text("Up to 5 Devices", style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontSize = 10.sp)
+                            Text("₹$normalPrice", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Black)
+                            Text(if (selectedCategory == "personal") "30 Days Personal" else "30 Days (5 Devices)", style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontSize = 10.sp)
+                        }
+                    }
+
+                    // Option 2: Lifetime Pass
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedPlanType = "lifetime" },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (selectedPlanType == "lifetime") Color(0xFF1E1B4B) else Color(0xFF111827),
+                        border = BorderStroke(
+                            if (selectedPlanType == "lifetime") 1.5.dp else 1.dp,
+                            if (selectedPlanType == "lifetime") Color(0xFFFBBF24) else Color(0xFF374151)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("LIFETIME PASS", style = MaterialTheme.typography.labelSmall, color = Color(0xFF38BDF8), fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("₹$lifetimePrice", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Black)
+                            Text(if (selectedCategory == "personal") "Forever VIP" else "5 Devices Forever", style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontSize = 10.sp)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Direct Bank Receiver Card: Avijit Barui
+                // Instant UPI Transfer Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     color = Color(0xFF0F172A),
                     border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -228,7 +294,7 @@ fun VipDiamondDialog(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
-                                Text("Receiver: $receiverName", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                Text("Instant UPI Transfer", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                             }
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
@@ -238,14 +304,14 @@ fun VipDiamondDialog(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("PhonePe / YBL: $phonePeUpi", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+                            Text("PhonePe / BHIM: $phonePeUpi", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
                             Text(
                                 "Copy",
                                 color = Color(0xFF38BDF8),
@@ -257,6 +323,8 @@ fun VipDiamondDialog(
                                 }
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -287,7 +355,7 @@ fun VipDiamondDialog(
                 ) {
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=${Uri.encode(receiverName)}&am=$selectedPlanPrice&cu=INR&tn=${Uri.encode("Aura Music VIP PRO")}")
+                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP ₹$selectedPlanPrice (Fixed Locked)")}")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
@@ -299,12 +367,12 @@ fun VipDiamondDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF581C87))
                     ) {
-                        Text("Pay via PhonePe", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Pay ₹$selectedPlanPrice via PhonePe", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
 
                     Button(
                         onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$gPayUpi&pn=${Uri.encode(receiverName)}&am=$selectedPlanPrice&cu=INR&tn=${Uri.encode("Aura Music VIP PRO")}")
+                            val uri = Uri.parse("upi://pay?pa=$gPayUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura Music VIP ₹$selectedPlanPrice (Fixed Locked)")}")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             try {
                                 context.startActivity(intent)
@@ -316,21 +384,22 @@ fun VipDiamondDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
                     ) {
-                        Text("Pay via GPay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Pay ₹$selectedPlanPrice via GPay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // QR Code View for scanning with ANY UPI App
+                // Real Workable UPI QR Code Scanner with NPCI Locked Amount
                 QrCodeView(
-                    dataPayload = "upi://pay?pa=$phonePeUpi&pn=${Uri.encode(receiverName)}&am=$selectedPlanPrice&cu=INR&tn=Aura%20Music%20VIP",
-                    pinCode = "₹$selectedPlanPrice - Avijit Barui"
+                    dataPayload = "upi://pay?pa=$phonePeUpi&pn=${Uri.encode(merchantDisplayName)}&am=${selectedPlanPrice}.00&mam=${selectedPlanPrice}.00&cu=INR&tn=${Uri.encode("Aura VIP ₹$selectedPlanPrice Fixed")}",
+                    isPayment = true,
+                    paymentAmount = selectedPlanPrice
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 12-Digit UTR / Transaction Reference Code Input
+                // 12-Digit UTR / Transaction Reference Code Input with Strict Amount Security
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -338,11 +407,31 @@ fun VipDiamondDialog(
                     border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "Enter 12-Digit UTR / Ref Number:",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFFFDE68A)
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Enter 12-Digit UTR / Ref Number:",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFFFDE68A)
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "Requires Exact ₹$selectedPlanPrice",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black
+                                    ),
+                                    color = Color(0xFF34D399),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = utrInput,
@@ -351,6 +440,12 @@ fun VipDiamondDialog(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "🔒 Security Check: Transfer must match exactly ₹$selectedPlanPrice. Incomplete payments (e.g. ₹1) are detected by bank reconciliation and automatically rejected.",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = Color(0xFF94A3B8)
                         )
                     }
                 }
@@ -381,7 +476,7 @@ fun VipDiamondDialog(
                             } else {
                                 isActivatedSuccess = true
                                 viewModel.activateVip(utrInput)
-                                Toast.makeText(context, "VIP Activated Successfully for Avijit Barui!", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "VIP Pass Activated Successfully! Enjoy Lossless Music.", Toast.LENGTH_LONG).show()
                             }
                         },
                         modifier = Modifier

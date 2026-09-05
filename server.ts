@@ -779,16 +779,16 @@ app.get('/api/vip/merchant-info', (req: Request, res: Response) => {
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || undefined,
     pricing: {
       INR: {
-        monthly: '₹210.00',
-        monthlyRaw: 210,
-        yearly: '₹1,250.00',
-        yearlyRaw: 1250,
+        monthly: '₹199.00',
+        monthlyRaw: 199,
+        yearly: '₹399.00',
+        yearlyRaw: 399,
       },
       USD: {
         monthly: '$2.99',
         monthlyRaw: 2.99,
-        yearly: '$19.99',
-        yearlyRaw: 19.99,
+        yearly: '$4.99',
+        yearlyRaw: 4.99,
       }
     }
   });
@@ -820,12 +820,51 @@ app.post('/api/vip/update-merchant', (req: Request, res: Response) => {
   }
 });
 
+// Helper to get exact pricing and duration for Personal/Family Normal (1 Month) and Lifetime plans
+const getVipPlanDetails = (plan: string, currency: string = 'INR') => {
+  const isINR = currency === 'INR';
+  switch (plan) {
+    case 'personal_monthly':
+    case 'monthly':
+      return {
+        amountRaw: isINR ? 49 : 1.49,
+        durationDays: 30,
+        planName: 'Personal VIP Normal (1 Month)'
+      };
+    case 'personal_lifetime':
+      return {
+        amountRaw: isINR ? 199 : 2.99,
+        durationDays: 36500, // Lifetime
+        planName: 'Personal VIP Lifetime'
+      };
+    case 'family_monthly':
+      return {
+        amountRaw: isINR ? 99 : 1.99,
+        durationDays: 30,
+        planName: 'Family VIP Normal (1 Month)'
+      };
+    case 'family_lifetime':
+    case 'yearly':
+      return {
+        amountRaw: isINR ? 399 : 4.99,
+        durationDays: 36500, // Lifetime
+        planName: 'Family VIP Lifetime'
+      };
+    default:
+      return {
+        amountRaw: isINR ? 199 : 2.99,
+        durationDays: 36500,
+        planName: 'Personal VIP Lifetime'
+      };
+  }
+};
+
 // 8.3 Create Real VIP Order
 app.post('/api/vip/create-order', (req: Request, res: Response) => {
   try {
-    const { plan = 'yearly', currency = 'INR', userEmail, userName, userId } = req.body;
-
-    const amountRaw = plan === 'yearly' ? (currency === 'INR' ? 1250 : 19.99) : (currency === 'INR' ? 210 : 2.99);
+    const { plan = 'personal_lifetime', currency = 'INR', userEmail, userName, userId } = req.body;
+    const details = getVipPlanDetails(plan, currency);
+    const amountRaw = details.amountRaw;
     const amount = currency === 'INR' ? `₹${amountRaw.toFixed(2)}` : `$${amountRaw.toFixed(2)}`;
     const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -866,7 +905,7 @@ app.post('/api/vip/verify-payment', (req: Request, res: Response) => {
       orderId,
       utrNumber,
       paymentMethod = 'UPI Direct',
-      plan = 'yearly',
+      plan = 'personal_lifetime',
       currency = 'INR',
       userEmail,
       userName,
@@ -893,13 +932,13 @@ app.post('/api/vip/verify-payment', (req: Request, res: Response) => {
       });
     }
 
-    const durationDays = plan === 'yearly' ? 365 : 30;
+    const details = getVipPlanDetails(plan, currency);
     const now = Date.now();
-    const expiry = now + durationDays * 24 * 60 * 60 * 1000;
+    const expiry = now + details.durationDays * 24 * 60 * 60 * 1000;
     const licenseKey = 'AURA-PRO-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
     const finalOrderId = orderId || ('ORD-' + Math.floor(100000 + Math.random() * 900000));
     const invoiceNumber = 'INV-2026-' + Math.floor(10000 + Math.random() * 90000);
-    const amountRaw = plan === 'yearly' ? (currency === 'INR' ? 1250 : 19.99) : (currency === 'INR' ? 210 : 2.99);
+    const amountRaw = details.amountRaw;
     const amount = currency === 'INR' ? `₹${amountRaw.toFixed(2)}` : `$${amountRaw.toFixed(2)}`;
 
     const verifiedOrder: StoredVipOrder = {

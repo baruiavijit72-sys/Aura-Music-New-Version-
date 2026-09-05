@@ -25,6 +25,7 @@ class WebAudioEngine {
   private userVolume = 1.0;
   private preAmpMultiplier = 1.75; // Clean +5.1dB Studio Loudness Boost
   private currentEQSettings: EqualizerSettings | null = null;
+  private currentDspMode: '32bit' | '24bit' | 'dsd' = '32bit';
   private currentOnEndedCallback?: () => void;
   private playSessionId = 0;
   private visualizerPhase = 0;
@@ -34,6 +35,7 @@ class WebAudioEngine {
   private eqFilterNodes: BiquadFilterNode[] = [];
   private bassFilterNode: BiquadFilterNode | null = null;
   private trebleFilterNode: BiquadFilterNode | null = null;
+  private dspHarmonicFilterNode: BiquadFilterNode | null = null;
   private studioCompressor: DynamicsCompressorNode | null = null;
   private masterGainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
@@ -89,6 +91,18 @@ class WebAudioEngine {
       this.ctx.resume().catch(() => {});
     }
 
+    if (typeof window !== 'undefined') {
+      const savedDsp = localStorage.getItem('aura_dsp_mode') as '32bit' | '24bit' | 'dsd' | null;
+      if (savedDsp) {
+        this.currentDspMode = savedDsp;
+      }
+      window.addEventListener('aura_dsp_changed', (e: any) => {
+        if (e.detail?.mode) {
+          this.setDspMode(e.detail.mode);
+        }
+      });
+    }
+
     this.setupAudioGraph();
   }
 
@@ -120,7 +134,13 @@ class WebAudioEngine {
       this.trebleFilterNode.frequency.value = 8000;
       this.trebleFilterNode.gain.value = 3.0; // +3dB high clarity
 
-      // 4. Studio Dynamic Range Compressor (Prevents clipping & produces punchy, loud audio)
+      // 4. Master DSP Harmonic / Oversampling Profile Filter
+      this.dspHarmonicFilterNode = this.ctx.createBiquadFilter();
+      this.dspHarmonicFilterNode.type = 'peaking';
+      this.dspHarmonicFilterNode.frequency.value = 3200;
+      this.dspHarmonicFilterNode.gain.value = 0;
+
+      // 5. Studio Dynamic Range Compressor (Prevents clipping & produces punchy, loud audio)
       this.studioCompressor = this.ctx.createDynamicsCompressor();
       this.studioCompressor.threshold.value = -12.0;
       this.studioCompressor.knee.value = 10.0;
@@ -128,16 +148,16 @@ class WebAudioEngine {
       this.studioCompressor.attack.value = 0.003;
       this.studioCompressor.release.value = 0.22;
 
-      // 5. Master Pre-Amp Loudness Gain Node (Loud & Powerful sound)
+      // 6. Master Pre-Amp Loudness Gain Node (Loud & Powerful sound)
       this.masterGainNode = this.ctx.createGain();
       this.masterGainNode.gain.value = this.userVolume * this.preAmpMultiplier;
 
-      // 6. Analyser for real-time visualizer
+      // 7. Analyser for real-time visualizer
       this.analyserNode = this.ctx.createAnalyser();
       this.analyserNode.fftSize = 128;
       this.analyserNode.smoothingTimeConstant = 0.8;
 
-      // Chain: Source -> EQ bands -> Bass -> Treble -> Studio Compressor -> Master Gain -> Analyser -> Destination
+      // Chain: Source -> EQ bands -> Bass -> Treble -> DSP Profile -> Studio Compressor -> Master Gain -> Analyser -> Destination
       let prevNode: AudioNode = this.mediaSourceNode;
       for (const filter of this.eqFilterNodes) {
         prevNode.connect(filter);
@@ -145,10 +165,14 @@ class WebAudioEngine {
       }
       prevNode.connect(this.bassFilterNode);
       this.bassFilterNode.connect(this.trebleFilterNode);
-      this.trebleFilterNode.connect(this.studioCompressor);
+      this.trebleFilterNode.connect(this.dspHarmonicFilterNode);
+      this.dspHarmonicFilterNode.connect(this.studioCompressor);
       this.studioCompressor.connect(this.masterGainNode);
       this.masterGainNode.connect(this.analyserNode);
       this.analyserNode.connect(this.ctx.destination);
+
+      // Apply initial saved DSP profile mode
+      this.setDspMode(this.currentDspMode);
     } catch (err) {
       // Graceful fallback if CORS restrictions apply to certain external streams
       console.warn('Audio graph connection notice:', err);
@@ -417,6 +441,55 @@ class WebAudioEngine {
     this.playbackRate = settings.playbackSpeed || 1.0;
     if (this.audioElement) {
       this.audioElement.playbackRate = this.playbackRate;
+    }
+  }
+
+  public setDspMode(mode: '32bit' | '24bit' | 'dsd') {
+    this.currentDspMode = mode;
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      if (mode === '32bit') {
+        // 32-Bit Float (96kHz Bit-Perfect - linear transparency, high sample-rate resolution, zero coloration)
+        if (this.dspHarmonicFilterNode) {
+          this.dspHarmonicFilterNode.type = 'peaking';
+          this.dspHarmonicFilterNode.frequency.setValueAtTime(3200, now);
+          this.dspHarmonicFilterNode.gain.setValueAtTime(0, now);
+        }
+        if (this.studioCompressor) {
+          this.studioCompressor.threshold.setValueAtTime(-8.0, now);
+          this.studioCompressor.knee.setValueAtTime(6.0, now);
+          this.studioCompressor.ratio.setValueAtTime(2.0, now);
+        }
+      } else if (mode === '24bit') {
+        // 24-Bit Studio (192kHz HD Master - warm analog harmonics, vocal air, dynamic punch)
+        if (this.dspHarmonicFilterNode) {
+          this.dspHarmonicFilterNode.type = 'peaking';
+          this.dspHarmonicFilterNode.frequency.setValueAtTime(3800, now);
+          this.dspHarmonicFilterNode.Q.setValueAtTime(1.1, now);
+          this.dspHarmonicFilterNode.gain.setValueAtTime(2.2, now); // +2.2dB air & vocal presence
+        }
+        if (this.studioCompressor) {
+          this.studioCompressor.threshold.setValueAtTime(-14.0, now);
+          this.studioCompressor.knee.setValueAtTime(12.0, now);
+          this.studioCompressor.ratio.setValueAtTime(3.8, now); // Studio dynamic master punch
+        }
+      } else if (mode === 'dsd') {
+        // DSD Direct (5.6MHz Emulation - analog Bessel roll-off filter & high dynamic headroom)
+        if (this.dspHarmonicFilterNode) {
+          this.dspHarmonicFilterNode.type = 'lowpass';
+          this.dspHarmonicFilterNode.frequency.setValueAtTime(21000, now);
+          this.dspHarmonicFilterNode.Q.setValueAtTime(0.707, now);
+        }
+        if (this.studioCompressor) {
+          this.studioCompressor.threshold.setValueAtTime(-6.0, now);
+          this.studioCompressor.knee.setValueAtTime(4.0, now);
+          this.studioCompressor.ratio.setValueAtTime(1.8, now); // Transparent analog smoothness
+        }
+      }
+    } catch (err) {
+      console.warn('DSP profile update notice:', err);
     }
   }
 

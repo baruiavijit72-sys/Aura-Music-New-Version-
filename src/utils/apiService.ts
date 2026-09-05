@@ -268,9 +268,9 @@ export async function apiGetMerchantInfo(): Promise<MerchantInfoResponse> {
     return {
       success: true,
       merchantUpi: '8777047129@ybl',
-      merchantName: 'Avijit Barui',
+      merchantName: 'Aura Music VIP',
       merchantPhone: '8777047129',
-      supportEmail: 'baruiavijit72@gmail.com'
+      supportEmail: 'support@auramusic.com'
     };
   }
 }
@@ -290,7 +290,7 @@ export async function apiUpdateMerchantInfo(payload: {
 }
 
 export async function apiCreateVipOrder(payload: {
-  plan: 'monthly' | 'yearly';
+  plan: 'personal_monthly' | 'personal_lifetime' | 'family_monthly' | 'family_lifetime' | 'monthly' | 'yearly' | string;
   currency: 'INR' | 'USD';
   userEmail?: string;
   userName?: string;
@@ -308,7 +308,7 @@ export async function apiVerifyVipPayment(payload: {
   orderId?: string;
   utrNumber: string;
   paymentMethod?: string;
-  plan: 'monthly' | 'yearly';
+  plan: 'personal_monthly' | 'personal_lifetime' | 'family_monthly' | 'family_lifetime' | 'monthly' | 'yearly' | string;
   currency?: 'INR' | 'USD';
   userEmail?: string;
   userName?: string;
