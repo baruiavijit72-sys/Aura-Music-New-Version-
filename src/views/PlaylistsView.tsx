@@ -29,6 +29,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { Playlist, Track } from '../types';
+import { RealAdBanner } from '../components/RealAdBanner';
 
 interface PlaylistsViewProps {
   playlists: Playlist[];
@@ -1042,7 +1043,7 @@ export const PlaylistsView: React.FC<PlaylistsViewProps> = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {customPlaylists.map((pl) => {
+            {customPlaylists.map((pl, idx) => {
               const plTracks = pl.trackIds
                 .map(id => tracks.find(t => t.id === id))
                 .filter((t): t is Track => t !== undefined);
@@ -1050,11 +1051,11 @@ export const PlaylistsView: React.FC<PlaylistsViewProps> = ({
               const gradient = pl.coverGradient || ['#3b82f6', '#1d4ed8'];
 
               return (
-                <div
-                  key={pl.id}
-                  onClick={() => setActivePlaylist(pl)}
-                  className="group relative flex items-center justify-between p-3 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/90 border border-white/5 hover:border-cyan-500/30 transition duration-200 shadow-sm cursor-pointer backdrop-blur-sm"
-                >
+                <React.Fragment key={pl.id}>
+                  <div
+                    onClick={() => setActivePlaylist(pl)}
+                    className="group relative flex items-center justify-between p-3 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800/90 border border-white/5 hover:border-cyan-500/30 transition duration-200 shadow-sm cursor-pointer backdrop-blur-sm"
+                  >
                   {/* Left Info & Cover Icon */}
                   <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
                     <div
@@ -1192,7 +1193,15 @@ export const PlaylistsView: React.FC<PlaylistsViewProps> = ({
                       </button>
                     </div>
                   )}
-                </div>
+                  </div>
+
+                  {/* In-feed Sponsored Ad banner every 4 playlists */}
+                  {(idx + 1) % 4 === 0 && (
+                    <div className="col-span-1 sm:col-span-2 my-1">
+                      <RealAdBanner slotIndex={Math.floor((idx + 1) / 4) + 2} format="compact" />
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>

@@ -208,7 +208,67 @@ export const RealAdBanner: React.FC<RealAdBannerProps> = ({
 
   const ad = REAL_ONLINE_ADS[adIndex];
 
-  // 1. COMPACT / MINI FORMAT (for inside lists or player)
+  // 1. DEDICATED SLIM PERSISTENT BANNER FORMAT (Spotify Free / YouTube Music desktop & mobile dock)
+  if (format === 'banner') {
+    return (
+      <aside 
+        aria-label="Sponsored Advertisement"
+        className={`w-full relative overflow-hidden rounded-xl border border-white/10 bg-[#0f141e]/95 backdrop-blur-md shadow-md hover:border-white/20 transition-all ${className}`}
+      >
+        <div className="h-0.5 w-full opacity-80" style={{ backgroundColor: ad.platformColor }} />
+        <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2.5">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-white/15 shrink-0 bg-black shadow-sm">
+              <img src={ad.brandAvatar} alt={ad.brandName} className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span 
+                  className="px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-black uppercase text-white tracking-wider shadow-xs"
+                  style={{ backgroundColor: ad.platformColor }}
+                >
+                  {ad.platformLabel}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-medium hidden xs:inline-block">Sponsored</span>
+                {ad.verified && <ShieldCheck className="w-3 h-3 text-blue-400 shrink-0" />}
+                <span className="text-xs font-bold text-white truncate max-w-[140px] sm:max-w-xs">{ad.brandName}</span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-zinc-300 font-medium truncate mt-0.5 max-w-md sm:max-w-xl">
+                {ad.headline} <span className="text-zinc-400 hidden sm:inline">— {ad.description}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={ad.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-md transition-all active:scale-95 flex items-center gap-1.5 hover:brightness-110 cursor-pointer"
+              style={{ 
+                backgroundColor: ad.platformColor,
+                boxShadow: `0 2px 10px ${ad.platformColor}33`
+              }}
+            >
+              <span>{ad.ctaText}</span>
+              <ExternalLink className="w-3 h-3 shrink-0" />
+            </a>
+
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              title="Dismiss ad"
+              aria-label="Dismiss ad"
+            >
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  // 2. COMPACT / MINI FORMAT (for inside lists or player)
   if (format === 'compact') {
     return (
       <div className={`relative overflow-hidden rounded-2xl bg-[#12151d] border border-white/10 p-3 shadow-lg group hover:border-white/20 transition-all ${className}`}>

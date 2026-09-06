@@ -60,6 +60,7 @@ import { SystemIntegrationModal } from './components/SystemIntegrationModal';
 import { PlaylistModal } from './components/PlaylistModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { BottomNav } from './components/BottomNav';
+import { PersistentAdContainer } from './components/PersistentAdContainer';
 import { AuthGateway } from './components/AuthGateway';
 import { SplashScreen, SplashSceneType } from './components/SplashScreen';
 import { AppIconTheme } from './components/AuraAppIcon';
@@ -761,7 +762,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-36 md:pb-28 max-w-6xl w-full mx-auto">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-48 md:pb-36 max-w-6xl w-full mx-auto">
         {currentTab === 'home' && (
           <HomeView
             tracks={visibleTracks}
@@ -849,6 +850,17 @@ export function App() {
           />
         )}
       </main>
+
+      {/* Persistent Dedicated Ad Container (Docked above playback controls like Spotify / YouTube Music) */}
+      <div 
+        className={`fixed left-0 right-0 z-30 pointer-events-none transition-all duration-300 ${
+          currentTrack 
+            ? 'bottom-[74px] md:bottom-[76px]' 
+            : 'bottom-14 md:bottom-2'
+        }`}
+      >
+        <PersistentAdContainer slotIndex={0} dismissible={true} />
+      </div>
 
       {/* Floating Bottom Mini Player */}
       <MiniPlayer
