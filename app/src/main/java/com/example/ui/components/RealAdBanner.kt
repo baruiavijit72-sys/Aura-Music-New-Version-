@@ -514,7 +514,7 @@ private fun launchCampaign(context: Context, uriHandler: androidx.compose.ui.pla
             }
             context.startActivity(deepIntent)
             launched = true
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
     }
 
     // Try package launch intent if available
@@ -527,7 +527,7 @@ private fun launchCampaign(context: Context, uriHandler: androidx.compose.ui.pla
                 context.startActivity(launchIntent)
                 launched = true
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
     }
 
     // Fallback: Open web URL in browser
@@ -538,17 +538,17 @@ private fun launchCampaign(context: Context, uriHandler: androidx.compose.ui.pla
             }
             context.startActivity(browserIntent)
             launched = true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             try {
                 uriHandler.openUri(campaign.actionUrl)
                 launched = true
-            } catch (_: Exception) {}
+            } catch (e: Exception) {}
         }
     }
 
     try {
         Toast.makeText(context, "Opening ${campaign.sponsorName}...", Toast.LENGTH_SHORT).show()
-    } catch (_: Exception) {}
+    } catch (e: Exception) {}
 }
 
 @Composable
