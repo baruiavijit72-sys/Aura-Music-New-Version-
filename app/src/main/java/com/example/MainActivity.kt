@@ -51,6 +51,14 @@ import com.example.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        AuraViewModel.activeInstance?.let { vm ->
+            vm.checkNotificationPermission(this)
+            vm.syncWithPlaybackService()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -77,6 +85,8 @@ class MainActivity : ComponentActivity() {
                 if (audioGranted) {
                     auraViewModel.scanDeviceStorage(context)
                 }
+                auraViewModel.checkNotificationPermission(context)
+                auraViewModel.syncWithPlaybackService()
             }
 
             // Function to trigger permission check
@@ -98,6 +108,8 @@ class MainActivity : ComponentActivity() {
 
                 if (permissionsToRequest.isEmpty()) {
                     auraViewModel.scanDeviceStorage(context)
+                    auraViewModel.checkNotificationPermission(context)
+                    auraViewModel.syncWithPlaybackService()
                 } else {
                     permissionLauncher.launch(permissionsToRequest.toTypedArray())
                 }
@@ -113,6 +125,7 @@ class MainActivity : ComponentActivity() {
                             DisneyHotstarSplashScreen(
                                 onSplashComplete = {
                                     isSplashVisible = false
+                                    triggerStoragePermissionCheck()
                                 }
                             )
                         }
@@ -142,17 +155,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "stardust")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
     LaunchedEffect(Unit) {
         delay(2200)
         onSplashComplete()
@@ -177,44 +179,10 @@ fun DisneyHotstarSplashScreen(onSplashComplete: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = 24.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(136.dp)
-                    .scale(pulseScale),
-                contentAlignment = Alignment.Center
-            ) {
-                // Multi-color neon aura halo
-                Box(
-                    modifier = Modifier
-                        .size(130.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.sweepGradient(
-                                listOf(
-                                    Color(0xFF06B6D4),
-                                    Color(0xFF6366F1),
-                                    Color(0xFFEC4899),
-                                    Color(0xFFFFD700),
-                                    Color(0xFF06B6D4)
-                                )
-                            )
-                        )
-                )
-                Box(
-                    modifier = Modifier
-                        .size(118.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF090D16)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.GraphicEq,
-                        contentDescription = "Aura Music",
-                        tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(60.dp)
-                    )
-                }
-            }
+            // Dynamic futuristic animated app logo
+            AnimatedAppLogo(
+                size = 120.dp
+            )
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -436,25 +404,10 @@ fun AuthenticationScreen(onAuthenticate: (String, String, String, Boolean) -> Un
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // App Brand Emblem
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFF6366F1), Color(0xFF06B6D4))
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(34.dp)
-                )
-            }
+            // Animated App Brand Emblem
+            AnimatedAppLogo(
+                size = 72.dp
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -1012,15 +965,74 @@ fun AuraMainApp(viewModel: AuraViewModel) {
                 }
             }
         ) { innerPadding ->
-            Box(
+            val context = LocalContext.current
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                AnimatedContent(
-                    targetState = currentScreen,
-                    label = "screen_transition"
-                ) { target ->
+                if (!viewModel.isNotificationPermissionGranted) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF1E293B),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = Color(0xFFFBBF24),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "System UI & Lock Screen Player",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Enable notification permission so music shows in Quick Settings & lock screen.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    viewModel.openNotificationSettings(context)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = "Enable",
+                                    color = Color.Black,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    AnimatedContent(
+                        targetState = currentScreen,
+                        label = "screen_transition"
+                    ) { target ->
                     when (target) {
                         AppScreen.HOME -> HomeScreen(viewModel = viewModel)
                         AppScreen.LIBRARY -> LibraryScreen(viewModel = viewModel)

@@ -1,5 +1,6 @@
 import { Track } from '../types';
 import { syncNativePlaybackNotification } from './nativeBridge';
+import { getSongCoverUrl } from './coverUtils';
 
 export interface MediaSessionCallbacks {
   onPlay: () => void;
@@ -124,26 +125,43 @@ export function updateSystemMediaSession(
     return;
   }
 
-  // Generate reliable artwork for notification bar & lockscreen
+  // Generate reliable raster PNG artwork for notification bar & lockscreen (Android requires Bitmap / PNG / JPEG)
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const defaultIconSvg = `${origin}/icon.svg`;
-  
   const artworkList: { src: string; sizes: string; type: string }[] = [];
 
-  // If track has a valid direct cover URL (http/https or blob:)
-  if (track.coverUrl && (track.coverUrl.startsWith('http') || track.coverUrl.startsWith('blob:'))) {
+  // 1. If track has a valid direct cover URL or recognized song artwork
+  const resolvedCover = getSongCoverUrl(track);
+
+  if (resolvedCover && (resolvedCover.startsWith('http') || resolvedCover.startsWith('blob:'))) {
     artworkList.push(
-      { src: track.coverUrl, sizes: '96x96', type: 'image/jpeg' },
-      { src: track.coverUrl, sizes: '192x192', type: 'image/jpeg' },
-      { src: track.coverUrl, sizes: '512x512', type: 'image/jpeg' },
+      { src: resolvedCover, sizes: '512x512', type: 'image/jpeg' },
+      { src: resolvedCover, sizes: '256x256', type: 'image/jpeg' },
+      { src: resolvedCover, sizes: '192x192', type: 'image/jpeg' },
+      { src: resolvedCover, sizes: '96x96', type: 'image/jpeg' },
     );
   }
 
-  // Always append absolute standard icons so Android OS can load them cleanly via HTTP
-  artworkList.push(
-    { src: defaultIconSvg, sizes: '192x192', type: 'image/svg+xml' },
-    { src: defaultIconSvg, sizes: '512x512', type: 'image/svg+xml' },
-  );
+  // 2. High-resolution generated canvas cover (works on 100% of Android devices including offline / local tracks)
+  try {
+    const generatedCover = createCoverDataUrl(track.title, track.artist, track.coverGradient);
+    if (generatedCover) {
+      artworkList.push(
+        { src: generatedCover, sizes: '512x512', type: 'image/png' },
+        { src: generatedCover, sizes: '192x192', type: 'image/png' },
+        { src: generatedCover, sizes: '96x96', type: 'image/png' },
+      );
+    }
+  } catch (canvasErr) {
+    console.warn('Canvas artwork generation notice:', canvasErr);
+  }
+
+  // 3. Fallback absolute PNG icons (Standard HTTP/HTTPS icons that Android Quick Settings can fetch reliably)
+  if (origin) {
+    artworkList.push(
+      { src: `${origin}/icon-512.png`, sizes: '512x512', type: 'image/png' },
+      { src: `${origin}/icon-192.png`, sizes: '192x192', type: 'image/png' },
+    );
+  }
 
   // 1. Set System Metadata (Notification Title, Artist, Album, Art)
   try {
@@ -250,6 +268,9 @@ export function updateSystemMediaSession(
   syncNativePlaybackNotification(track, isPlaying);
 }
 
+let lastPositionUpdate = 0;
+let lastReportedPosition = -1;
+
 /**
  * Updates notification scrubber position & playback rate
  */
@@ -262,6 +283,12 @@ export function updateSystemPositionState(
     return;
   }
 
+  const now = Date.now();
+  // Throttle updates so we don't spam Android System UI / Chrome (update every 2s or on manual seek)
+  if (now - lastPositionUpdate < 2000 && Math.abs(position - lastReportedPosition) < 2) {
+    return;
+  }
+
   if (duration > 0 && position >= 0 && position <= duration) {
     try {
       navigator.mediaSession.setPositionState({
@@ -269,6 +296,8 @@ export function updateSystemPositionState(
         playbackRate: Math.max(0.5, Math.min(2.0, playbackRate)),
         position: Math.min(duration, Math.max(0, position)),
       });
+      lastPositionUpdate = now;
+      lastReportedPosition = position;
     } catch (e) {
       // Ignore occasional out-of-range position adjustments
     }

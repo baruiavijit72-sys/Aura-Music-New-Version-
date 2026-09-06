@@ -283,10 +283,24 @@ fun AudioTrimmerScreen(
         }
 
         if (viewModel.trimExportErrorMessage != null) {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        try {
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:" + ctx.packageName)
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            ctx.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    },
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF59E0B).copy(alpha = 0.2f)
+                color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -294,11 +308,19 @@ fun AudioTrimmerScreen(
                 ) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF59E0B))
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = viewModel.trimExportErrorMessage!!,
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color(0xFFF59E0B)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = viewModel.trimExportErrorMessage!!,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFF59E0B)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tap here to open Settings and Allow.",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFDE68A)
+                        )
+                    }
                 }
             }
         }

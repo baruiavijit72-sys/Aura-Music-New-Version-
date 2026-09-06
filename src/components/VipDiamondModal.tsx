@@ -41,7 +41,8 @@ import {
   User,
   Users,
   Share2,
-  Key
+  Key,
+  Smartphone
 } from 'lucide-react';
 import {
   apiGetMerchantInfo,
@@ -1236,118 +1237,58 @@ Support: baruiavijit72@gmail.com
               </div>
             </div>
 
-            {/* TAB 1: UPI & 1-TAP INSTANT GATEWAY */}
+            {/* TAB 1: UPI DIRECT PAYMENT (Unified Modern Flow) */}
             {paymentTab === 'upi' && (
               <div className="space-y-4 animate-in fade-in">
-                {/* Instant Gateway Pay Card (Spotify / YouTube style) */}
-                <div className="p-4 rounded-3xl bg-gradient-to-b from-amber-500/10 via-zinc-950 to-zinc-950 border border-amber-500/30 text-center space-y-3">
-                  <div className="flex items-center justify-between text-xs text-zinc-400">
-                    <span className="font-semibold flex items-center gap-1.5 text-zinc-200">
-                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                      Instant UPI Checkout
+                <div className="p-4 rounded-3xl bg-zinc-900/90 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-amber-400" />
+                      Pay with UPI App
                     </span>
-                    <span className="text-amber-400 font-mono font-bold text-sm">{activeAmount}</span>
+                    <span className="text-xs font-bold text-amber-400">{activeAmount}</span>
                   </div>
-
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Choose your UPI app. The exact amount of <span className="text-amber-300 font-bold">{activeAmount}</span> will be charged and VIP benefits will be activated automatically.
+                    Tapping the button below will securely open your installed UPI app (Google Pay, PhonePe, Paytm, or BHIM) with the exact amount prefilled.
                   </p>
-
-                  {/* 1-Tap App Launchers */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      onClick={() => {
-                        window.location.href = `upi://pay?pa=8777047129@ybl&pn=AuraMusicVIP&am=${activeAmountRaw}&cu=INR&tn=VIPPass`;
-                        executePayment('PhonePe UPI (Auto-Settlement)');
-                      }}
-                      className="py-3 px-3 rounded-2xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/30 text-xs font-bold text-purple-200 hover:text-white flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-md"
-                    >
-                      <span>Pay via PhonePe</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        window.location.href = `upi://pay?pa=8777047129@ybl&pn=AuraMusicVIP&am=${activeAmountRaw}&cu=INR&tn=VIPPass`;
-                        executePayment('Google Pay (Auto-Settlement)');
-                      }}
-                      className="py-3 px-3 rounded-2xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/30 text-xs font-bold text-blue-200 hover:text-white flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer shadow-md"
-                    >
-                      <span>Pay via Google Pay</span>
-                    </button>
-                  </div>
 
                   <button
                     onClick={() => {
                       window.location.href = `upi://pay?pa=8777047129@ybl&pn=AuraMusicVIP&am=${activeAmountRaw}&cu=INR&tn=VIPPass`;
-                      executePayment('Instant UPI (Paytm / CRED / BHIM)');
+                      executePayment('UPI App Auto-Settlement');
                     }}
-                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
                   >
-                    <CheckCheck className="w-4 h-4" />
-                    <span>Pay {activeAmount} with Any UPI App</span>
+                    <Lock className="w-4 h-4" />
+                    <span>Pay {activeAmount} via UPI</span>
                   </button>
                 </div>
 
-                {/* Optional QR Code for Desktop / Secondary device scan */}
-                <div className="p-4 rounded-3xl bg-zinc-950 border border-white/10 flex flex-col items-center text-center space-y-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
-                    <QrCode className="w-4 h-4 text-amber-400" />
-                    <span>Or Scan QR Code to Pay</span>
-                  </div>
-
-                  {qrDataUrl ? (
-                    <div className="p-3 bg-white rounded-2xl shadow-xl border border-white/20">
-                      <img src={qrDataUrl} alt="UPI Payment QR" className="w-40 h-40 object-contain rounded-lg" />
-                    </div>
-                  ) : (
-                    <div className="w-40 h-40 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-500 text-xs">
-                      Generating QR...
-                    </div>
-                  )}
-
-                  <p className="text-[11px] text-zinc-500">
-                    Scan with any UPI scanner. VIP will activate instantly.
-                  </p>
-                </div>
-
-                {/* Need Manual Reference / Receipt Entry Toggle */}
+                {/* Secondary Option: QR Code toggle for computer users */}
                 <div className="text-center pt-1">
                   <button
                     type="button"
                     onClick={() => setShowManualUtr(!showManualUtr)}
-                    className="text-[11px] text-zinc-500 hover:text-amber-400 underline transition cursor-pointer"
+                    className="text-[11px] text-zinc-500 hover:text-amber-400 transition cursor-pointer"
                   >
-                    {showManualUtr ? 'Hide manual transaction reference' : 'Paid via QR? Enter Transaction ID manually'}
+                    {showManualUtr ? 'Hide QR Code' : 'Paying from another screen? Scan QR Code'}
                   </button>
                 </div>
 
                 {showManualUtr && (
-                  <div className="p-3.5 rounded-2xl bg-zinc-900/90 border border-white/10 space-y-2 text-left animate-in fade-in">
-                    <label className="text-[11px] font-bold text-zinc-200 flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                      <span>12-Digit UTR / Transaction ID:</span>
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={16}
-                      value={utrNumber}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
-                        setUtrNumber(val);
-                        if (utrError) setUtrError('');
-                      }}
-                      placeholder="e.g. 424589102341"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-white/10 text-xs font-mono text-amber-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 tracking-wider"
-                    />
-                    {utrError && (
-                      <p className="text-[10px] text-rose-400 font-medium">{utrError}</p>
+                  <div className="p-4 rounded-3xl bg-zinc-950 border border-white/10 flex flex-col items-center text-center space-y-3 animate-in fade-in">
+                    {qrDataUrl ? (
+                      <div className="p-3 bg-white rounded-2xl shadow-xl">
+                        <img src={qrDataUrl} alt="UPI Payment QR" className="w-36 h-36 object-contain rounded-lg" />
+                      </div>
+                    ) : (
+                      <div className="w-36 h-36 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-500 text-xs">
+                        Loading QR...
+                      </div>
                     )}
-                    <button
-                      onClick={handleVerifyUtr}
-                      disabled={isVerifyingUtr}
-                      className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer disabled:opacity-50"
-                    >
-                      <span>{isVerifyingUtr ? 'Verifying...' : 'Verify Transaction'}</span>
-                    </button>
+                    <p className="text-[11px] text-zinc-400">
+                      Scan with Google Pay, PhonePe, or Paytm to complete payment.
+                    </p>
                   </div>
                 )}
               </div>

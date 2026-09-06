@@ -26,11 +26,17 @@ import {
   Hexagon,
   Waves,
   Activity,
-  Sparkles
+  Sparkles,
+  Music2,
+  CassetteTape,
+  Layers,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Track, PlaybackMode, EqualizerSettings } from '../types';
 import { LyricsView } from './LyricsView';
 import { audioEngine } from '../utils/audioEngine';
+import { getSongCoverUrl } from '../utils/coverUtils';
+import { RealAdBanner } from './RealAdBanner';
 
 interface NowPlayingModalProps {
   isOpen: boolean;
@@ -81,15 +87,15 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
 }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showSpeedDialog, setShowSpeedDialog] = useState(false);
-  const [artShape, setArtShape] = useState<'vinyl' | 'card' | 'halo' | 'cyber'>(() => {
-    return (localStorage.getItem('aura_player_shape') as any) || 'vinyl';
+  const [artShape, setArtShape] = useState<'card' | 'vinyl' | 'cassette' | 'halo' | 'cyber' | 'prism'>(() => {
+    return (localStorage.getItem('aura_player_shape') as any) || 'card';
   });
   const [visualizerStyle, setVisualizerStyle] = useState<'bars' | 'wave' | 'dots'>(() => {
     return (localStorage.getItem('aura_viz_style') as any) || 'bars';
   });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const handleSelectShape = (shape: 'vinyl' | 'card' | 'halo' | 'cyber') => {
+  const handleSelectShape = (shape: 'card' | 'vinyl' | 'cassette' | 'halo' | 'cyber' | 'prism') => {
     setArtShape(shape);
     localStorage.setItem('aura_player_shape', shape);
   };
@@ -265,42 +271,55 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
             />
           ) : (
             <div className="flex flex-col items-center">
-              {/* Interactive Player Shape & Design Theme Switcher */}
-              <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl mb-4 shadow-inner">
+              {/* Interactive Player Shape & Design Theme Switcher (6 Themes) */}
+              <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl mb-4 shadow-inner max-w-full overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => handleSelectShape('card')}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
+                    artShape === 'card'
+                      ? 'bg-indigo-600 text-white shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Original Studio Album Cover"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Cover</span>
+                </button>
+
                 <button
                   onClick={() => handleSelectShape('vinyl')}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
                     artShape === 'vinyl'
                       ? 'bg-amber-400 text-black shadow-md font-black'
                       : 'text-zinc-400 hover:text-white'
                   }`}
-                  title="Spinning Vinyl LP Record"
+                  title="Spinning Retro Vinyl Record"
                 >
                   <Disc className={`w-3.5 h-3.5 ${isPlaying && artShape === 'vinyl' ? 'animate-spin' : ''}`} />
                   <span>Vinyl</span>
                 </button>
 
                 <button
-                  onClick={() => handleSelectShape('card')}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
-                    artShape === 'card'
-                      ? 'bg-indigo-600 text-white shadow-md font-black'
+                  onClick={() => handleSelectShape('cassette')}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
+                    artShape === 'cassette'
+                      ? 'bg-emerald-500 text-black shadow-md font-black'
                       : 'text-zinc-400 hover:text-white'
                   }`}
-                  title="Modern Studio Card"
+                  title="Vintage 80s/90s Cassette Tape"
                 >
-                  <Square className="w-3.5 h-3.5" />
-                  <span>Card</span>
+                  <CassetteTape className="w-3.5 h-3.5" />
+                  <span>Tape</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectShape('halo')}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
                     artShape === 'halo'
                       ? 'bg-pink-600 text-white shadow-md font-black'
                       : 'text-zinc-400 hover:text-white'
                   }`}
-                  title="Pulsing Halo Disc"
+                  title="Pulsing Neon Halo Disc"
                 >
                   <Circle className="w-3.5 h-3.5" />
                   <span>Halo</span>
@@ -308,19 +327,81 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
 
                 <button
                   onClick={() => handleSelectShape('cyber')}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
                     artShape === 'cyber'
                       ? 'bg-cyan-500 text-black shadow-md font-black'
                       : 'text-zinc-400 hover:text-white'
                   }`}
-                  title="Cyber Hexagon Diamond"
+                  title="Cyberpunk Hexagon HUD"
                 >
                   <Hexagon className="w-3.5 h-3.5" />
                   <span>Cyber</span>
                 </button>
+
+                <button
+                  onClick={() => handleSelectShape('prism')}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer active:scale-95 shrink-0 ${
+                    artShape === 'prism'
+                      ? 'bg-purple-600 text-white shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Floating Glass Prism & Sheen"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Prism</span>
+                </button>
               </div>
 
-              {/* SHAPE 1: VINYL LP RECORD (ঘূর্ণায়মান ভিনাইল ডিস্ক) */}
+              {/* SHAPE 1: FULL ALBUM ARTWORK CARD (আসল কভার ছবি - Original High-Res Album Cover) */}
+              {artShape === 'card' && (
+                <div 
+                  className="w-60 h-60 sm:w-68 sm:h-68 rounded-3xl shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-500 hover:scale-[1.02] my-2 group border border-white/15"
+                  style={{
+                    boxShadow: `0 20px 50px ${track.coverGradient?.[0] || '#3b82f6'}55, 0 10px 25px rgba(0,0,0,0.8)`
+                  }}
+                >
+                  {getSongCoverUrl(track) ? (
+                    <img 
+                      src={getSongCoverUrl(track)} 
+                      alt={track.title} 
+                      className="w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-700" 
+                    />
+                  ) : (
+                    <div 
+                      className="w-full h-full flex flex-col items-center justify-center p-6 text-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#1e293b'}, ${track.coverGradient?.[1] || '#0f172a'})`
+                      }}
+                    >
+                      <Music2 className="w-16 h-16 text-white/80 mb-2" />
+                      <p className="text-sm font-bold text-white line-clamp-1">{track.title}</p>
+                      <p className="text-xs text-zinc-300">{track.artist}</p>
+                    </div>
+                  )}
+
+                  {/* Gloss / Vignette reflections */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
+
+                  {/* High-Res Audio Format Badge */}
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 border border-white/20 backdrop-blur-md shadow-lg">
+                    <Zap className="w-3 h-3 text-amber-400" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-wider">{track.format} • Hi-Res</span>
+                  </div>
+
+                  {/* Album Name or Quality Overlay */}
+                  <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+                    <div className="min-w-0 pr-2">
+                      <p className="text-xs font-bold text-white truncate drop-shadow-md">{track.album || track.title}</p>
+                      <p className="text-[10px] text-zinc-300 truncate drop-shadow">{track.artist}</p>
+                    </div>
+                    <span className="text-[9px] font-bold text-amber-300 bg-black/60 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
+                      Lossless
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* SHAPE 2: VINYL LP RECORD WITH REAL SONG ARTWORK (ঘূর্ণায়মান ভিনাইল ডিস্কে আসল কভার আর্ট) */}
               {artShape === 'vinyl' && (
                 <div className="relative flex items-center justify-center my-2">
                   {/* Turntable Stylus / Tonearm Indicator */}
@@ -341,7 +422,7 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                       isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
                     }`}
                     style={{
-                      boxShadow: `0 0 35px ${track.coverGradient[0]}33, 0 20px 40px rgba(0,0,0,0.9)`
+                      boxShadow: `0 0 35px ${track.coverGradient?.[0] || '#3b82f6'}33, 0 20px 40px rgba(0,0,0,0.9)`
                     }}
                   >
                     {/* Concentric Audio Grooves */}
@@ -354,47 +435,148 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                     <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/[0.04] via-transparent to-white/[0.04] pointer-events-none" />
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/[0.03] via-transparent to-white/[0.03] pointer-events-none" />
 
-                    {/* Center Album Art Label */}
+                    {/* Center Album Art Label with REAL Song Artwork */}
                     <div 
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full shadow-inner flex flex-col items-center justify-center relative overflow-hidden border-2 border-zinc-700/60"
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full shadow-inner flex flex-col items-center justify-center relative overflow-hidden border-2 border-amber-400/80"
                       style={{
-                        background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                        background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#1e293b'}, ${track.coverGradient?.[1] || '#0f172a'})`
                       }}
                     >
-                      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-                      <span className="text-xl sm:text-2xl font-black text-white/95 tracking-tighter relative z-10">AURA</span>
-                      <span className="text-[8px] font-bold text-amber-300 uppercase tracking-widest relative z-10">{track.format}</span>
-                      
+                      {getSongCoverUrl(track) ? (
+                        <img 
+                          src={getSongCoverUrl(track)} 
+                          alt={track.title} 
+                          className="absolute inset-0 w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center">
+                          <Music2 className="w-8 h-8 text-white/80" />
+                        </div>
+                      )}
+
+                      {/* Vinyl Center Concentric Rings */}
+                      <div className="absolute inset-0 rounded-full border border-black/50 pointer-events-none" />
+                      <div className="absolute inset-1.5 rounded-full border border-white/20 pointer-events-none" />
+
                       {/* Spindle Center Hole */}
-                      <div className="w-5 h-5 rounded-full bg-zinc-950 border-2 border-zinc-400 shadow-inner mt-1 relative z-10 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                      <div className="w-5 h-5 rounded-full bg-zinc-950 border-2 border-zinc-300 shadow-inner relative z-10 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-100" />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* SHAPE 2: MODERN STUDIO CARD (মডার্ন স্টুডিও কার্ড) */}
-              {artShape === 'card' && (
-                <div 
-                  className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl shadow-2xl flex items-center justify-center relative overflow-hidden transition-all duration-500 hover:scale-105 my-2"
-                  style={{
-                    background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`,
-                    boxShadow: `0 20px 45px ${track.coverGradient[0]}44, 0 10px 25px rgba(0,0,0,0.8)`
-                  }}
-                >
-                  <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
-                  <div className="text-center p-4 relative z-10">
-                    <span className="text-5xl font-black text-white/40 tracking-tighter">AURA</span>
-                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 border border-white/20 backdrop-blur-md">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format}</span>
+              {/* SHAPE 3: VINTAGE AUDIO CASSETTE TAPE (ভিন্টেজ ক্যাসেট টেপ প্লেয়ার) */}
+              {artShape === 'cassette' && (
+                <div className="relative flex items-center justify-center my-2">
+                  <div 
+                    className="w-68 sm:w-76 h-48 sm:h-52 rounded-2xl bg-[#14151a] border-2 border-zinc-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.9)] relative flex flex-col p-3 overflow-hidden select-none"
+                    style={{
+                      boxShadow: `0 0 35px ${track.coverGradient?.[0] || '#10b981'}33, 0 20px 40px rgba(0,0,0,0.9)`
+                    }}
+                  >
+                    {/* Metallic Corner Screws */}
+                    <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-zinc-400 border border-zinc-600 flex items-center justify-center"><div className="w-1.5 h-0.5 bg-zinc-800" /></div>
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-zinc-400 border border-zinc-600 flex items-center justify-center"><div className="w-1.5 h-0.5 bg-zinc-800" /></div>
+                    <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-zinc-400 border border-zinc-600 flex items-center justify-center"><div className="w-1.5 h-0.5 bg-zinc-800" /></div>
+                    <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-zinc-400 border border-zinc-600 flex items-center justify-center"><div className="w-1.5 h-0.5 bg-zinc-800" /></div>
+
+                    {/* Cassette Upper Label Strip */}
+                    <div className="w-full bg-[#f8fafc] text-zinc-900 rounded-lg p-2 shadow-inner border border-zinc-300 relative flex items-center gap-2">
+                      {/* Album Art Mini Stamp */}
+                      <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-900 border border-zinc-400 shrink-0 shadow-sm">
+                        {getSongCoverUrl(track) ? (
+                          <img src={getSongCoverUrl(track)} alt={track.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-white">
+                            <Music2 className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Handwritten / Monospace Song Track Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-emerald-800">
+                          <span>AURA RETRO • SIDE A</span>
+                          <span className="font-mono bg-zinc-200 px-1 rounded text-zinc-700">CHROME 70μs</span>
+                        </div>
+                        <p className="text-[11px] font-black text-zinc-900 truncate leading-tight mt-0.5 font-mono">
+                          {track.title}
+                        </p>
+                        <p className="text-[9px] font-bold text-zinc-600 truncate leading-tight">
+                          {track.artist}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Cassette Center Window with Spools & Magnetic Tape */}
+                    <div className="w-full flex-1 my-2 bg-[#090a0f] border-2 border-zinc-700/60 rounded-xl relative flex items-center justify-around px-4 overflow-hidden shadow-inner">
+                      {/* Magnetic Brown Tape Strip behind window */}
+                      <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-8 bg-gradient-to-r from-[#2e1708] via-[#45220c] to-[#2e1708] rounded-sm border-y border-[#5c3015]/40 pointer-events-none" />
+
+                      {/* Left Rotating Reel / Spool */}
+                      <div className="relative z-10 flex flex-col items-center">
+                        <div 
+                          className={`w-12 h-12 rounded-full bg-white border-2 border-zinc-300 shadow-md flex items-center justify-center relative ${
+                            isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''
+                          }`}
+                        >
+                          {/* 6 Gear Teeth */}
+                          <div className="absolute w-2 h-full bg-zinc-800/15" />
+                          <div className="absolute h-2 w-full bg-zinc-800/15" />
+                          <div className="absolute w-2 h-full bg-zinc-800/15 rotate-45" />
+                          <div className="w-5 h-5 rounded-full bg-zinc-900 border-2 border-zinc-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-zinc-200" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Center Tape Level Meter & Window Ruler */}
+                      <div className="relative z-10 flex flex-col items-center justify-center text-center px-1">
+                        <div className="text-[8px] font-mono text-zinc-400 tracking-widest font-bold">100 • 50 • 0</div>
+                        <div className="w-10 h-1 bg-white/20 rounded-full my-1 overflow-hidden">
+                          <div 
+                            className="h-full bg-emerald-400 transition-all duration-300"
+                            style={{ width: `${Math.min(100, Math.max(10, (currentTime / (duration || 1)) * 100))}%` }}
+                          />
+                        </div>
+                        <span className="text-[7px] font-mono text-emerald-400 uppercase font-bold">DOLBY B NR</span>
+                      </div>
+
+                      {/* Right Rotating Reel / Spool */}
+                      <div className="relative z-10 flex flex-col items-center">
+                        <div 
+                          className={`w-12 h-12 rounded-full bg-white border-2 border-zinc-300 shadow-md flex items-center justify-center relative ${
+                            isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''
+                          }`}
+                        >
+                          {/* 6 Gear Teeth */}
+                          <div className="absolute w-2 h-full bg-zinc-800/15" />
+                          <div className="absolute h-2 w-full bg-zinc-800/15" />
+                          <div className="absolute w-2 h-full bg-zinc-800/15 rotate-45" />
+                          <div className="w-5 h-5 rounded-full bg-zinc-900 border-2 border-zinc-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-zinc-200" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cassette Bottom Head Cutout & Markings */}
+                    <div className="w-full flex items-center justify-between text-[8px] font-mono text-zinc-400 px-2 pt-0.5">
+                      <span className="text-amber-400 font-bold">HI-RES AUDIO</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-sm bg-zinc-700" />
+                        <div className="w-4 h-2 rounded-sm bg-zinc-800 border border-zinc-600" />
+                        <div className="w-2 h-2 rounded-sm bg-zinc-700" />
+                      </div>
+                      <span className="text-zinc-400 font-bold">{track.format.toUpperCase()}</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* SHAPE 3: PULSING HALO DISC (সার্কুলার নিয়ন রিং) */}
+              {/* SHAPE 4: PULSING HALO DISC WITH REAL ARTWORK (সার্কুলার নিয়ন রিং) */}
               {artShape === 'halo' && (
                 <div className="relative flex items-center justify-center my-2">
                   <div 
@@ -402,47 +584,139 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                       isPlaying ? 'animate-pulse' : 'opacity-20'
                     }`}
                     style={{
-                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
+                      background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#ec4899'}, ${track.coverGradient?.[1] || '#f43f5e'})`
                     }}
                   />
                   <div 
-                    className="w-56 h-56 sm:w-64 sm:h-64 rounded-full shadow-2xl flex items-center justify-center relative overflow-hidden border-2 border-white/20"
-                    style={{
-                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
-                    }}
+                    className="w-56 h-56 sm:w-64 sm:h-64 rounded-full shadow-2xl flex items-center justify-center relative overflow-hidden border-2 border-white/25"
                   >
-                    <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
-                    <div className="text-center p-4 relative z-10">
-                      <span className="text-5xl font-black text-white/50 tracking-tighter">AURA</span>
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 border border-white/20 backdrop-blur-md">
+                    {getSongCoverUrl(track) ? (
+                      <img 
+                        src={getSongCoverUrl(track)} 
+                        alt={track.title} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#ec4899'}, ${track.coverGradient?.[1] || '#f43f5e'})`
+                        }}
+                      >
+                        <Music2 className="w-16 h-16 text-white/80" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+                    <div className="absolute bottom-4 inset-x-0 flex justify-center z-10 pointer-events-none">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-white/20 backdrop-blur-md">
                         <Zap className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format}</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">{track.format} • Hi-Res</span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* SHAPE 4: CYBER HEXAGON / DIAMOND (সাইবার জ্যামিতিক হেক্সাগন) */}
+              {/* SHAPE 4: CYBER HEXAGON WITH REAL ARTWORK (সাইবার জ্যামিতিক হেক্সাগন) */}
               {artShape === 'cyber' && (
                 <div className="relative flex items-center justify-center my-2">
                   <div 
-                    className="w-56 h-56 sm:w-64 sm:h-64 shadow-2xl flex items-center justify-center relative transition-all"
+                    className="w-56 h-56 sm:w-64 sm:h-64 shadow-2xl flex items-center justify-center relative transition-all overflow-hidden"
                     style={{
                       clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                      background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`,
-                      boxShadow: `0 0 40px ${track.coverGradient[1]}55`
+                      boxShadow: `0 0 40px ${track.coverGradient?.[1] || '#06b6d4'}55`
                     }}
                   >
-                    <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-                    <div className="text-center p-4 relative z-10">
-                      <div className="px-2 py-0.5 rounded bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono font-bold uppercase mb-1">
+                    {getSongCoverUrl(track) ? (
+                      <img 
+                        src={getSongCoverUrl(track)} 
+                        alt={track.title} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#0891b2'}, ${track.coverGradient?.[1] || '#164e63'})`
+                        }}
+                      >
+                        <Music2 className="w-16 h-16 text-white/80" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-6 inset-x-0 text-center z-10 pointer-events-none">
+                      <div className="px-2 py-0.5 rounded bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono font-bold uppercase inline-block mb-1">
                         CYBER ACOUSTIC
                       </div>
-                      <span className="text-4xl sm:text-5xl font-black text-white/70 tracking-tighter">AURA</span>
-                      <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/20">
-                        <Zap className="w-3 h-3 text-amber-400" />
-                        <span className="text-[10px] font-bold text-white font-mono uppercase">{track.format} • 96kHz</span>
+                      <div>
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/70 border border-white/20">
+                          <Zap className="w-3 h-3 text-amber-400" />
+                          <span className="text-[10px] font-bold text-white font-mono uppercase">{track.format} • 96kHz</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SHAPE 6: FLOATING GLASS PRISM & AURA (গ্লাস প্রিজম ও আধুনিক অরা) */}
+              {artShape === 'prism' && (
+                <div className="relative flex items-center justify-center my-2">
+                  {/* Rotating Multi-color Ambient Backlight Aura */}
+                  <div 
+                    className={`absolute -inset-4 rounded-[2.5rem] opacity-70 blur-xl transition-all pointer-events-none ${
+                      isPlaying ? 'animate-[spin_16s_linear_infinite]' : 'opacity-30'
+                    }`}
+                    style={{
+                      background: `conic-gradient(from 0deg, #ec4899, #8b5cf6, #3b82f6, #06b6d4, #10b981, #ec4899)`
+                    }}
+                  />
+
+                  {/* Multi-layered Glass Card */}
+                  <div 
+                    className="w-56 h-56 sm:w-64 sm:h-64 rounded-[2rem] shadow-2xl flex items-center justify-center relative overflow-hidden border border-white/30 backdrop-blur-2xl bg-white/10 p-2.5 transition-transform duration-500 hover:scale-[1.02]"
+                    style={{
+                      boxShadow: `0 20px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,255,255,0.15)`
+                    }}
+                  >
+                    {/* Inner Album Container */}
+                    <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative border border-white/20 shadow-inner">
+                      {getSongCoverUrl(track) ? (
+                        <img 
+                          src={getSongCoverUrl(track)} 
+                          alt={track.title} 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full flex flex-col items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${track.coverGradient?.[0] || '#8b5cf6'}, ${track.coverGradient?.[1] || '#3b82f6'})`
+                          }}
+                        >
+                          <Music2 className="w-16 h-16 text-white/80" />
+                        </div>
+                      )}
+
+                      {/* Prismatic Diagonal Sheen */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 via-transparent to-cyan-400/25 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+
+                      {/* Top Glass Badge */}
+                      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 border border-white/25 backdrop-blur-md shadow-md">
+                        <Sparkles className="w-3 h-3 text-purple-300" />
+                        <span className="text-[9px] font-black text-white uppercase tracking-wider">PRISM 3D</span>
+                      </div>
+
+                      {/* Bottom Glass Audio Pill */}
+                      <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between p-2 rounded-xl bg-black/65 border border-white/20 backdrop-blur-md">
+                        <div className="min-w-0 pr-2">
+                          <p className="text-xs font-bold text-white truncate drop-shadow">{track.title}</p>
+                          <p className="text-[10px] text-zinc-300 truncate">{track.artist}</p>
+                        </div>
+                        <span className="text-[9px] font-bold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md border border-purple-400/30 shrink-0 uppercase">
+                          {track.format}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -683,6 +957,11 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Sponsored Online Ad banner inside Player (Similar to Spotify / Gaana player view) */}
+          <div className="pt-2">
+            <RealAdBanner slotIndex={2} format="compact" />
+          </div>
         </div>
       </div>
     </div>

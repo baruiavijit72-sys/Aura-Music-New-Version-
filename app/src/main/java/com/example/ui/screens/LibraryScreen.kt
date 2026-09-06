@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.TrackSource
 import com.example.state.AuraViewModel
+import com.example.ui.components.RealAdBanner
 import com.example.ui.components.TrackItem
 import com.example.ui.theme.AuraPrimary
 import com.example.ui.theme.AuraSecondary
@@ -338,6 +339,15 @@ fun LibraryScreen(
                     }
                 }
             }
+        }
+
+        // Sponsored Brand Ad Banner
+        item {
+            RealAdBanner(
+                campaignIndex = 2,
+                compact = true
+            )
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
         // Category Content Rendering

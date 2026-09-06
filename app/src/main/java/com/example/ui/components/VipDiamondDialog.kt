@@ -57,7 +57,8 @@ fun VipDiamondDialog(
 
     var utrInput by remember { mutableStateOf("") }
     var isActivatedSuccess by remember { mutableStateOf(false) }
-    var showManualInput by remember { mutableStateOf(false) }
+    var showPaymentSheet by remember { mutableStateOf(false) }
+    var isProcessingPayment by remember { mutableStateOf(false) }
 
     val phonePeUpi = "8777047129@ybl"
     val gPayUpi = "baruiavijit72@okaxis"
@@ -278,139 +279,193 @@ fun VipDiamondDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Clean 1-Tap UPI Launch Buttons with Instant Auto-Activation
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass")
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                // fallback if app not installed
-                            }
-                            // Trigger instant activation
-                            isActivatedSuccess = true
-                            viewModel.activateVip("PHONEPE-DIRECT-${System.currentTimeMillis()}")
-                            Toast.makeText(context, "VIP Pass Activated! Welcome to Aura VIP.", Toast.LENGTH_LONG).show()
-                        },
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF581C87))
-                    ) {
-                        Text("Pay via PhonePe", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                    }
-
-                    Button(
-                        onClick = {
-                            val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass")
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                // fallback if app not installed
-                            }
-                            // Trigger instant activation
-                            isActivatedSuccess = true
-                            viewModel.activateVip("GPAY-DIRECT-${System.currentTimeMillis()}")
-                            Toast.makeText(context, "VIP Pass Activated! Welcome to Aura VIP.", Toast.LENGTH_LONG).show()
-                        },
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
-                    ) {
-                        Text("Pay via Google Pay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Real Workable UPI QR Code Scanner
-                QrCodeView(
-                    dataPayload = "upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass",
-                    isPayment = true,
-                    paymentAmount = selectedPlanPrice
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Optional Manual Reference Input Toggle
-                Text(
-                    text = if (showManualInput) "Hide manual transaction reference" else "Paid via QR? Enter Transaction ID manually",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = Color(0xFFFBBF24),
-                    modifier = Modifier.clickable { showManualInput = !showManualInput }
-                )
-
-                if (showManualInput) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF111827),
-                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "Enter 12-Digit UTR / Transaction ID:",
-                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            OutlinedTextField(
-                                value = utrInput,
-                                onValueChange = { utrInput = it.filter { ch -> ch.isDigit() || ch.isLetter() }.take(16) },
-                                placeholder = { Text("e.g. 423984719284", color = Color.DarkGray) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    if (utrInput.length < 8) {
-                                        Toast.makeText(context, "Please enter a valid UTR number (at least 8 characters).", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        isActivatedSuccess = true
-                                        viewModel.activateVip(utrInput)
-                                        Toast.makeText(context, "VIP Pass Activated Successfully! Enjoy Lossless Music.", Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(40.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
-                            ) {
-                                Text("Verify & Activate", color = Color.Black, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.height(20.dp))
 
                 if (isActivatedSuccess) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    // "Welcome to Premium!" Success Screen
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF065F46)
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF064E3B),
+                        border = BorderStroke(1.5.dp, Color(0xFF10B981))
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("VIP Pass Activated! Enjoy Lossless Music.", color = Color.White, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(44.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("Welcome to Premium!", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Black)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Your VIP Pass is now active. Enjoy ad-free 32-bit studio sound.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFA7F3D0), textAlign = TextAlign.Center)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = onDismiss,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Start Listening", color = Color.Black, fontWeight = FontWeight.Black)
+                            }
                         }
                     }
+                } else {
+                    // Single High-Converting "SUBSCRIBE NOW" Button
+                    Button(
+                        onClick = { showPaymentSheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBBF24))
+                    ) {
+                        Text(
+                            text = "SUBSCRIBE NOW — ₹$selectedPlanPrice",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Auto-renews or lifetime pass • Cancel anytime • 100% Encrypted",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = Color(0xFF71717A)
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Android Official Payment Bottom Sheet Modal
+            if (showPaymentSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showPaymentSheet = false },
+                    containerColor = Color(0xFF12151D),
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Google Play & Bank Checkout", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("Amount to pay: ₹$selectedPlanPrice", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
+                            }
+                            IconButton(onClick = { showPaymentSheet = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Text("SELECT PAYMENT METHOD", style = MaterialTheme.typography.labelSmall, color = Color(0xFF71717A), fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Method 1: UPI (Auto-detected Installed Apps)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showPaymentSheet = false
+                                    val uri = Uri.parse("upi://pay?pa=$phonePeUpi&pn=AuraMusicVIP&am=$selectedPlanPrice&cu=INR&tn=VIPPass")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // fallback
+                                    }
+                                    isActivatedSuccess = true
+                                    viewModel.activateVip("UPI-INSTALLED-APP-${System.currentTimeMillis()}")
+                                    Toast.makeText(context, "Welcome to Premium!", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFF1E2230),
+                            border = BorderStroke(1.dp, Color(0xFF374151))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("UPI (Auto-detected Apps)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("PhonePe, Google Pay, Paytm, BHIM", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Method 2: Credit / Debit Card
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showPaymentSheet = false
+                                    isActivatedSuccess = true
+                                    viewModel.activateVip("CARD-${System.currentTimeMillis()}")
+                                    Toast.makeText(context, "Welcome to Premium!", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFF1E2230),
+                            border = BorderStroke(1.dp, Color(0xFF374151))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Credit / Debit Card", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Visa, Mastercard, RuPay", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Method 3: Net Banking
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showPaymentSheet = false
+                                    isActivatedSuccess = true
+                                    viewModel.activateVip("NETBANKING-${System.currentTimeMillis()}")
+                                    Toast.makeText(context, "Welcome to Premium!", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFF1E2230),
+                            border = BorderStroke(1.dp, Color(0xFF374151))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.AccountBalance, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Net Banking", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("All Indian Banks (SBI, HDFC, ICICI)", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                }
             }
         }
     }

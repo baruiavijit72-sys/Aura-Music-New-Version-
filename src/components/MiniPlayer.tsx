@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play, Pause, SkipForward, SkipBack, Heart, ChevronUp, Maximize2, ListMusic, Music2 } from 'lucide-react';
 import { Track } from '../types';
+import { getSongCoverUrl } from '../utils/coverUtils';
 
 interface MiniPlayerProps {
   currentTrack: Track | null;
@@ -69,8 +70,8 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
                     : 'linear-gradient(135deg, #1e293b, #0f172a)'
                 }}
               >
-                {currentTrack.coverUrl ? (
-                  <img src={currentTrack.coverUrl} alt="" className="w-full h-full object-cover" />
+                {getSongCoverUrl(currentTrack) ? (
+                  <img src={getSongCoverUrl(currentTrack)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <Music2 className="w-5 h-5 text-white/70" />
                 )}

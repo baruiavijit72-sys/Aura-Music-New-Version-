@@ -30,12 +30,14 @@ import {
 import { Track, Playlist } from '../types';
 import { downloadTrackToDevice, shareTrackViaNativeOS } from '../utils/audioTransfer';
 import { AUDIO_ACCEPT_STRING, convertFileToTrack, isAudioFile } from '../utils/fileScanner';
+import { getSongCoverUrl } from '../utils/coverUtils';
 import { FolderScannerModal } from '../components/FolderScannerModal';
 import { AlphabetScroller } from '../components/AlphabetScroller';
 import { FoldersBrowser } from '../components/FoldersBrowser';
 import { AlbumsBrowser } from '../components/AlbumsBrowser';
 import { ArtistsBrowser } from '../components/ArtistsBrowser';
 import { GenresBrowser } from '../components/GenresBrowser';
+import { RealAdBanner } from '../components/RealAdBanner';
 import { useTranslation } from '../i18n/LanguageContext';
 
 interface LibraryViewProps {
@@ -619,9 +621,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                               background: `linear-gradient(135deg, ${track.coverGradient[0]}, ${track.coverGradient[1]})`
                             }}
                           >
-                            {track.coverUrl ? (
+                            {getSongCoverUrl(track) ? (
                               <img
-                                src={track.coverUrl}
+                                src={getSongCoverUrl(track)}
                                 alt={track.title}
                                 className="w-full h-full object-cover"
                                 referrerPolicy="no-referrer"
@@ -780,6 +782,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                           </div>
                         )}
                       </div>
+
+                      {/* In-feed Sponsored Ad (Appears periodically every 8 songs like standard music apps) */}
+                      {(idx + 1) % 8 === 0 && (
+                        <div className="my-2">
+                          <RealAdBanner slotIndex={Math.floor((idx + 1) / 8)} format="compact" />
+                        </div>
+                      )}
                     </React.Fragment>
                   );
                 })}

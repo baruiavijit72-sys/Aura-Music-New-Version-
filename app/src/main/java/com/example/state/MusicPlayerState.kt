@@ -190,6 +190,9 @@ class AuraViewModel : ViewModel() {
     var totalListeningSeconds by mutableDoubleStateOf(0.0)
         private set
 
+    var isNotificationPermissionGranted by mutableStateOf(true)
+        private set
+
     private var applicationContext: Context? = null
     private var dbHelper: AuraDatabaseHelper? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -207,6 +210,40 @@ class AuraViewModel : ViewModel() {
         applicationContext = appCtx
         dbHelper = AuraDatabaseHelper(appCtx)
         loadDataFromDatabase()
+        checkNotificationPermission(appCtx)
+        syncWithPlaybackService()
+    }
+
+    fun checkNotificationPermission(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        val areEnabled = manager?.areNotificationsEnabled() ?: true
+        isNotificationPermissionGranted = hasPermission && areEnabled
+    }
+
+    fun openNotificationSettings(context: Context) {
+        try {
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                }
+            } else {
+                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+            }
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun loadDataFromDatabase() {
@@ -471,14 +508,18 @@ class AuraViewModel : ViewModel() {
     }
 
     // Playback Controls
-    private fun syncWithPlaybackService() {
+    fun syncWithPlaybackService() {
         val ctx = applicationContext ?: return
         val track = currentTrack ?: return
         AuraPlaybackService.updateService(
-            ctx,
-            track.title,
-            track.artist,
-            isPlaying
+            context = ctx,
+            title = track.title,
+            artist = track.artist,
+            album = track.album,
+            durationMs = track.durationSeconds * 1000L,
+            positionMs = (playbackPositionSeconds * 1000L).toLong(),
+            gradientColors = track.coverGradient,
+            isPlaying = isPlaying
         )
     }
 
@@ -590,6 +631,7 @@ class AuraViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            syncWithPlaybackService()
         }
     }
 
@@ -602,6 +644,7 @@ class AuraViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            syncWithPlaybackService()
         }
     }
 
@@ -1078,6 +1121,7 @@ class AuraViewModel : ViewModel() {
     private fun startPlaybackProgress() {
         playbackJob?.cancel()
         playbackJob = viewModelScope.launch {
+            var loopCount = 0
             while (isActive && isPlaying) {
                 delay(250)
                 val mp = mediaPlayer
@@ -1096,6 +1140,11 @@ class AuraViewModel : ViewModel() {
                             playbackPositionSeconds = nextPos
                         }
                     }
+                }
+                loopCount++
+                // Sync with service periodically (approx every 4 seconds) to ensure notification seekbar is locked in
+                if (loopCount % 16 == 0) {
+                    syncWithPlaybackService()
                 }
             }
         }

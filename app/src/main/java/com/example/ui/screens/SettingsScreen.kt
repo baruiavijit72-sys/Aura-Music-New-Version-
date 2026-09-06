@@ -245,6 +245,72 @@ fun SettingsScreen(
                 }
             }
         }
+
+        // 7. System Media Controls & Quick Settings
+        Text(
+            text = "SYSTEM MEDIA CONTROLS (QUICK SETTINGS)",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Show Song in Notification & Quick Settings",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Text(
+                            text = if (viewModel.isNotificationPermissionGranted)
+                                "Active: Media controls & album art are linked to System UI"
+                            else
+                                "Disabled: Tap 'Enable' to allow song controls in Quick Settings",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (viewModel.isNotificationPermissionGranted) Color(0xFF10B981) else Color(0xFFF59E0B)
+                        )
+                    }
+                    if (!viewModel.isNotificationPermissionGranted) {
+                        Button(
+                            onClick = { viewModel.openNotificationSettings(context) },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AuraPrimary)
+                        ) {
+                            Text("Enable", style = MaterialTheme.typography.labelSmall)
+                        }
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Active",
+                            tint = Color(0xFF10B981)
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                OutlinedButton(
+                    onClick = {
+                        viewModel.syncWithPlaybackService()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Sync Media Session with System UI", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
     }
 
     if (isAddBlacklistDialogOpen) {
