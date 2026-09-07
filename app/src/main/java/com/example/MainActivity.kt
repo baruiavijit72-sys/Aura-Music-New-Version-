@@ -1050,6 +1050,7 @@ fun AuraMainApp(viewModel: AuraViewModel) {
                 }
             }
         }
+    }
 
         // Full Screen Immersive Now Playing Overlay
         AnimatedVisibility(

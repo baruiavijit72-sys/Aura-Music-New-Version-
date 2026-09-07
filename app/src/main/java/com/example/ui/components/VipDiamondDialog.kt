@@ -31,6 +31,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.state.AuraViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VipDiamondDialog(
     viewModel: AuraViewModel,
