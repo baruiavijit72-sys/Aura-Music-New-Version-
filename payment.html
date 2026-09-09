@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Music Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body style="background:#0f172a; color:#fff; text-align:center; padding-top:50px; font-family:sans-serif;">
+
+    <h2>Aura Music Premium Subscription</h2>
+    <p>Unlock all features for ₹500</p>
+    <button id="rzp-button1" style="padding:12px 24px; background:#38bdf8; color:#0f172a; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Pay Now</button>
+
+    <script>
+    var options = {
+        "key": "rzp_test_Ta2gp20Cxs8c6N",
+        "amount": "50000",
+        "currency": "INR",
+        "name": "Aura Music",
+        "description": "Premium Subscription",
+        "handler": function (response){
+            alert("Payment Successful! Payment ID: " + response.razorpay_payment_id);
+        },
+        "prefill": {
+            "email": "baruiavijit72@gmail.com"
+        },
+        "theme": {
+            "color": "#38bdf8"
+        }
+    };
+    var rzp1 = new Razorpay(options);
+    document.getElementById('rzp-button1').onclick = function(e){
+        rzp1.open();
+        e.preventDefault();
+    }
+    </script>
+</body>
+</html>
