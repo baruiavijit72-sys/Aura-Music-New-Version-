@@ -8,13 +8,16 @@ import {
   Layers,
   SlidersHorizontal,
   Share2,
-  Globe
+  Globe,
+  Download,
+  Smartphone
 } from 'lucide-react';
 import { ThemeMode, UserProfile, Track } from '../types';
 import { useTranslation } from '../i18n/LanguageContext';
 import { LanguageModal } from './LanguageModal';
 import { VipDiamondModal } from './VipDiamondModal';
 import { VideoStreamFinderModal } from './VideoStreamFinderModal';
+import { AuraLogo } from './AuraLogo';
 
 interface HeaderProps {
   currentTab: 'home' | 'library' | 'playlists' | 'analytics' | 'settings';
@@ -104,10 +107,24 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
-              <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-                DSP 32-Bit Lossless
-              </span>
+            <div className="flex items-center gap-2">
+              <a
+                href="/app-debug.apk"
+                download="AuraMusic-v2.0-native.apk"
+                id="btn-download-apk-header"
+                title="Download Real Original Android APK (Install on your phone)"
+                className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1.5 transition active:scale-95 shadow-sm shadow-emerald-500/10 cursor-pointer"
+              >
+                <Smartphone className="w-3 h-3 text-emerald-400" />
+                <span>APK v2.0</span>
+                <Download className="w-2.5 h-2.5 text-emerald-400" />
+              </a>
+
+              <div className="hidden sm:flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
+                <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                  DSP 32-Bit Lossless
+                </span>
+              </div>
             </div>
           </div>
 
@@ -118,63 +135,9 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setCurrentTab('home')}
               className="flex items-center gap-2.5 cursor-pointer group select-none"
             >
-              {/* Stylish Shape & Design Badge */}
-              <div className="relative flex items-center justify-center">
-                {/* Ambient dynamic holographic aura glow */}
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-cyan-500 via-sky-500 to-indigo-600 opacity-60 blur-md group-hover:opacity-90 group-hover:scale-110 transition-all duration-500" />
-                
-                {/* Outer faceted / beveled chassis */}
-                <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-700 p-[1.5px] shadow-[0_4px_20px_rgba(6,182,212,0.35)] group-hover:shadow-[0_4px_25px_rgba(56,189,248,0.5)] transition-all duration-300 group-hover:scale-105">
-                  
-                  {/* Inner dark sapphire & obsidian core */}
-                  <div className="w-full h-full rounded-[14px] bg-gradient-to-b from-[#0c1a2e] via-[#071322] to-[#030914] flex items-center justify-center relative overflow-hidden">
-                    
-                    {/* Top glass reflection / specular sweep */}
-                    <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-t-[14px]" />
-                    
-                    {/* Futuristic Monogram & Equalizer Design */}
-                    <svg viewBox="0 0 40 40" className="w-6 h-6 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]" fill="none">
-                      {/* Stylized Futuristic "A" with Sonic Harmonic Arc */}
-                      <path
-                        d="M20 5L29 27H24.5L22.5 21.5H17.5L15.5 27H11L20 5Z"
-                        fill="url(#aura_badge_grad)"
-                        stroke="#38bdf8"
-                        strokeWidth="0.75"
-                      />
-                      <polygon
-                        points="20,11 18.2,17.5 21.8,17.5"
-                        fill="#030914"
-                      />
-                      {/* Luminous Harmonic Sonic Ring */}
-                      <path
-                        d="M8 29.5C12 33 28 33 32 29.5"
-                        stroke="url(#aura_arc_grad)"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                      {/* Mini Pulsing Equalizer Bars */}
-                      <rect x="15" y="31.5" width="2" height="3" rx="1" fill="#38bdf8" className="animate-pulse" />
-                      <rect x="19" y="30" width="2" height="4.5" rx="1" fill="#67e8f9" className="animate-pulse" style={{ animationDelay: '150ms' }} />
-                      <rect x="23" y="31" width="2" height="3.5" rx="1" fill="#38bdf8" className="animate-pulse" style={{ animationDelay: '300ms' }} />
-                      
-                      <defs>
-                        <linearGradient id="aura_badge_grad" x1="11" y1="5" x2="29" y2="27" gradientUnits="userSpaceOnUse">
-                          <stop offset="0%" stopColor="#ffffff" />
-                          <stop offset="40%" stopColor="#67e8f9" />
-                          <stop offset="100%" stopColor="#0284c7" />
-                        </linearGradient>
-                        <linearGradient id="aura_arc_grad" x1="8" y1="30" x2="32" y2="30" gradientUnits="userSpaceOnUse">
-                          <stop offset="0%" stopColor="#06b6d4" />
-                          <stop offset="50%" stopColor="#38bdf8" />
-                          <stop offset="100%" stopColor="#818cf8" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-
-                    {/* Laser gleam dot */}
-                    <div className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-cyan-300 shadow-[0_0_4px_#67e8f9]" />
-                  </div>
-                </div>
+              {/* Master Aura Music App Badge */}
+              <div className="relative flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                <AuraLogo size={38} variant="emblem" glow={true} animated={true} />
               </div>
 
               {/* Stylish Brand Typography */}
@@ -208,26 +171,26 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Action Icons matching Screenshot: [ Diamond VIP ] [ Search ] [ Video/Stream ] [ Settings Hexagon ] */}
             <div className="flex items-center gap-2">
               
-              {/* 💎 Diamond VIP Lossless Button */}
+              {/* 💎 Aura Music Premium VIP Button */}
               <button
                 id="btn-diamond-vip"
                 onClick={() => setIsVipModalOpen(true)}
-                title={isVipActive ? "AURA MUSIC VIP PRO (Active)" : "Subscribe to AURA MUSIC VIP"}
+                title={isVipActive ? "Aura Music Premium VIP (Active)" : "Get Aura Music Premium (VIP Membership)"}
                 className={`relative h-9 px-2.5 sm:px-3 rounded-xl border flex items-center gap-1.5 transition shadow-sm cursor-pointer active:scale-95 ${
                   isVipActive
-                    ? 'bg-gradient-to-r from-amber-500/25 via-yellow-600/30 to-amber-950/70 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.4)]'
-                    : 'bg-gradient-to-r from-amber-500/15 via-yellow-600/10 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border-amber-400/50 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.15)]'
+                    ? 'bg-gradient-to-r from-emerald-500/25 via-emerald-600/30 to-zinc-950/70 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(30,215,96,0.35)]'
+                    : 'bg-[#1ed760]/15 hover:bg-[#1ed760]/25 border-[#1ed760]/40 text-[#1ed760] shadow-[0_0_10px_rgba(30,215,96,0.15)]'
                 }`}
               >
-                <Gem className={`w-3.5 h-3.5 shrink-0 ${isVipActive ? 'fill-amber-400/40 text-amber-300 animate-pulse' : 'text-amber-300'}`} />
-                <span className="text-[11px] font-black uppercase tracking-wider text-amber-200">
-                  {isVipActive ? 'VIP PRO' : 'VIP'}
+                <Gem className={`w-3.5 h-3.5 shrink-0 ${isVipActive ? 'fill-emerald-400/40 text-emerald-300 animate-pulse' : 'text-[#1ed760]'}`} />
+                <span className="text-[11px] font-black uppercase tracking-wider text-white">
+                  {isVipActive ? 'PREMIUM VIP' : 'PREMIUM'}
                 </span>
                 {isVipActive ? (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] animate-ping" />
                 ) : (
-                  <span className="hidden sm:inline-block text-[9px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-bold">
-                    PRO
+                  <span className="hidden sm:inline-block text-[9px] px-1 py-0.2 rounded bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/30 font-bold">
+                    VIP
                   </span>
                 )}
               </button>
