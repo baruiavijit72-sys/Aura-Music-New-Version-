@@ -1,0 +1,19 @@
+{
+  "brand": "AURA Music & Media",
+  "sourceAssets": {
+    "fullLogo": "assets/branding/aura-full-logo.svg",
+    "appIcon": "assets/branding/aura-app-icon.svg",
+    "splashScreen": "assets/branding/aura-splash-screen.svg"
+  },
+  "exports": {
+    "mainAppIcon": {"source": "aura-app-icon.svg", "sizes": [1024, 512, 192, 180, 120, 96, 72, 48, 36]},
+    "androidMainAppIcon": {"source": "aura-app-icon.svg", "format": "PNG/WebP", "sizes": [48, 72, 96, 144, 192,  PlayStore: 512]},
+    "iosMainAppIcon": {"source": "aura-app-icon.svg", "format": "PNG", "sizes": [180, 167, 152, 120, 87, 80, 76, 60, 58, 40, 29, 20]},
+    "googlePlayStoreMainAppIcon": {"source": "aura-app-icon.svg", "format": "PNG", "size": 512},
+    "iosStoreMainAppIcon": {"source": "aura-app-icon.svg", "format": "PNG", "size": 1024},
+    "websiteMainAppIcon": {"source": "aura-full-logo.svg", "format": "SVG/PNG", "sizes": [192, 512]},
+    "webAppMainAppIcon": {"source": "aura-app-icon.svg", "format": "SVG/PNG", "sizes": [192, 512]},
+    "websiteStoreMainAppIcon": {"source": "aura-full-logo.svg", "format": "SVG/PNG", "sizes": [512, 1024]}
+  },
+  "colors": {"background": "#070B14", "blue": "#168FF5", "purple": "#646BEA", "pink": "#E20BD8", "gold": "#EFB83D"}
+}

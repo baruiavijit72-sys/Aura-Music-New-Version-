@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">AURA Music &amp; Media</title>
+  <desc id="desc">Circular neon-gradient AURA logo with colorful audio visualizer bars.</desc>
+  <defs>
+    <linearGradient id="ring" x1="10%" y1="10%" x2="90%" y2="90%"><stop stop-color="#168ff5"/><stop offset=".48" stop-color="#646bea"/><stop offset="1" stop-color="#e20bd8"/></linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#20e89c"/><stop offset="1" stop-color="#0db9df"/></linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8f36d8"/><stop offset="1" stop-color="#de13bc"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff3c3c"/><stop offset="1" stop-color="#c60039"/></linearGradient>
+    <radialGradient id="bg"><stop stop-color="#172333"/><stop offset="1" stop-color="#070b14"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="shadow"><feGaussianBlur in="SourceAlpha" stdDeviation="8"/><feOffset dy="10"/><feComponentTransfer><feFuncA type="linear" slope=".6"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="512" r="445" fill="none" stroke="#111a2a" stroke-width="42" opacity=".75"/>
+  <circle cx="512" cy="512" r="430" fill="none" stroke="url(#ring)" stroke-width="30" filter="url(#glow)"/>
+  <g fill="none" stroke-linecap="round" filter="url(#glow)">
+    <path d="M270 420v170" stroke="#178eea" stroke-width="42"/><path d="M386 286v400" stroke="url(#green)" stroke-width="42"/>
+    <path d="M512 210v600" stroke="url(#green)" stroke-width="42"/><path d="M638 305v390" stroke="url(#purple)" stroke-width="42"/><path d="M754 420v170" stroke="#9d2bca" stroke-width="42"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="800" text-anchor="middle" filter="url(#shadow)"><text x="512" y="555" font-size="240" letter-spacing="-12" fill="#fff">AURA</text></g>
+  <g fill="url(#red)" filter="url(#shadow)"><path d="M715 363h52v208c0 65-35 97-91 97-47 0-79-27-79-67 0-35 26-59 62-59 18 0 35 6 49 18v-197zm-27 236c-18 0-30 9-30 23 0 15 12 25 30 25 18 0 28-10 28-31v-12c-8-3-17-5-28-5z"/></g>
+  <text x="512" y="735" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="53" font-weight="700" letter-spacing="9" fill="#efb83d">MUSIC &amp; MEDIA</text>
+</svg>
