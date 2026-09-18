@@ -6,55 +6,33 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- The supplied Aura logo: neon circular aura around an audio equalizer. -->
+    <!-- Aura logo mark, scaled for the adaptive-icon safe zone. -->
     <path
-        android:pathData="M54,16 C32.46,16 15,33.46 15,55 C15,76.54 32.46,94 54,94 C75.54,94 93,76.54 93,55 C93,33.46 75.54,16 54,16 Z"
+        android:pathData="M54,13 C31.36,13 13,31.36 13,54 C13,76.64 31.36,95 54,95 C76.64,95 95,76.64 95,54 C95,31.36 76.64,13 54,13 Z"
         android:fillColor="@android:color/transparent"
-        android:strokeWidth="4.5">
+        android:strokeWidth="4.2">
         <aapt:attr name="android:strokeColor">
-            <gradient
-                android:startX="15"
-                android:startY="20"
-                android:endX="93"
-                android:endY="94"
-                android:type="linear">
-                <item android:color="#FF0797F6" android:offset="0.0" />
-                <item android:color="#FF526CF2" android:offset="0.48" />
-                <item android:color="#FFD20CE8" android:offset="1.0" />
+            <gradient android:startX="13" android:startY="18" android:endX="95" android:endY="95" android:type="linear">
+                <item android:color="#FF079AF4" android:offset="0.0" />
+                <item android:color="#FF5668EF" android:offset="0.5" />
+                <item android:color="#FFD30BE4" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Equalizer bars from the supplied mark. -->
-    <path android:pathData="M30,47 L30,65" android:strokeWidth="7" android:strokeLineCap="round" android:strokeColor="#FF208BEF" />
-    <path android:pathData="M41,33 L41,76" android:strokeWidth="7" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient android:startX="41" android:startY="33" android:endX="41" android:endY="76" android:type="linear">
-                <item android:color="#FF25E49B" android:offset="0" />
-                <item android:color="#FF18B8D7" android:offset="1" />
-            </gradient>
-        </aapt:attr>
+    <!-- Symmetric equalizer bars from the supplied logo. -->
+    <path android:pathData="M27,48 L27,60" android:strokeWidth="6.5" android:strokeLineCap="round" android:strokeColor="#FF256FEA" />
+    <path android:pathData="M37,40 L37,68" android:strokeWidth="6.5" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="37" android:startY="40" android:endX="37" android:endY="68" android:type="linear"><item android:color="#FF16DCEB" android:offset="0" /><item android:color="#FF2789F2" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M54,25 L54,84" android:strokeWidth="7" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient android:startX="54" android:startY="25" android:endX="54" android:endY="84" android:type="linear">
-                <item android:color="#FF24E69A" android:offset="0" />
-                <item android:color="#FFF1F1F1" android:offset="1" />
-            </gradient>
-        </aapt:attr>
+    <path android:pathData="M47,31 L47,77" android:strokeWidth="6.5" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="47" android:startY="31" android:endX="47" android:endY="77" android:type="linear"><item android:color="#FF2BEA96" android:offset="0" /><item android:color="#FF10BFD7" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M67,36 L67,69" android:strokeWidth="7" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient android:startX="67" android:startY="36" android:endX="67" android:endY="69" android:type="linear">
-                <item android:color="#FF7A2AD7" android:offset="0" />
-                <item android:color="#FFB117D1" android:offset="1" />
-            </gradient>
-        </aapt:attr>
+    <path android:pathData="M57,24 L57,84" android:strokeWidth="6.5" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="57" android:startY="24" android:endX="57" android:endY="84" android:type="linear"><item android:color="#FF29E89A" android:offset="0" /><item android:color="#FFF4F4F4" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M78,48 L78,62" android:strokeWidth="7" android:strokeLineCap="round" android:strokeColor="#FF8D27D0" />
-
-    <!-- Red music note accent from the supplied logo. -->
-    <path
-        android:pathData="M68,45 L80,42 L80,63 C80,67.42 76.42,71 72,71 C68.69,71 66,69.21 66,67 C66,64.79 68.69,63 72,63 C73.5,63 74.87,63.32 76,63.87 L76,51 L68,53 Z"
-        android:fillColor="#FFE21B2D" />
+    <path android:pathData="M67,39 L67,69" android:strokeWidth="6.5" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="67" android:startY="39" android:endX="67" android:endY="69" android:type="linear"><item android:color="#FFB520E3" android:offset="0" /><item android:color="#FFE31AC7" android:offset="1" /></gradient></aapt:attr>
+    </path>
+    <path android:pathData="M78,47 L78,61" android:strokeWidth="6.5" android:strokeLineCap="round" android:strokeColor="#FF8C2DCE" />
 </vector>
