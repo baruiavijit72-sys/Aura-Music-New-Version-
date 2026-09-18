@@ -1,1 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?><resources><style name="Theme.MyApplication.Splash" parent="android:style/Theme.DeviceDefault.NoActionBar"><item name="android:windowBackground">@drawable/aura_splash</item><item name="android:statusBarColor">@color/aura_background</item><item name="android:navigationBarColor">@color/aura_background</item><item name="android:windowLightStatusBar">false</item></style></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MyApplication.Splash" parent="android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@drawable/aura_splash</item>
+        <item name="android:statusBarColor">@color/aura_background</item>
+        <item name="android:navigationBarColor">@color/aura_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
