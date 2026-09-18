@@ -6,33 +6,43 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Aura logo mark, scaled for the adaptive-icon safe zone. -->
+    <!-- Full AURA lockup adapted to the 108dp adaptive-icon safe area. -->
     <path
-        android:pathData="M54,13 C31.36,13 13,31.36 13,54 C13,76.64 31.36,95 54,95 C76.64,95 95,76.64 95,54 C95,31.36 76.64,13 54,13 Z"
+        android:pathData="M54,8 C28.6,8 8,28.6 8,54 C8,79.4 28.6,100 54,100 C79.4,100 100,79.4 100,54 C100,28.6 79.4,8 54,8 Z"
         android:fillColor="@android:color/transparent"
-        android:strokeWidth="4.2">
+        android:strokeWidth="3.2">
         <aapt:attr name="android:strokeColor">
-            <gradient android:startX="13" android:startY="18" android:endX="95" android:endY="95" android:type="linear">
-                <item android:color="#FF079AF4" android:offset="0.0" />
-                <item android:color="#FF5668EF" android:offset="0.5" />
-                <item android:color="#FFD30BE4" android:offset="1.0" />
+            <gradient android:startX="10" android:startY="18" android:endX="96" android:endY="92" android:type="linear">
+                <item android:color="#FF168FF5" android:offset="0" />
+                <item android:color="#FF646BEA" android:offset="0.52" />
+                <item android:color="#FFE20BD8" android:offset="1" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Symmetric equalizer bars from the supplied logo. -->
-    <path android:pathData="M27,48 L27,60" android:strokeWidth="6.5" android:strokeLineCap="round" android:strokeColor="#FF256FEA" />
-    <path android:pathData="M37,40 L37,68" android:strokeWidth="6.5" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor"><gradient android:startX="37" android:startY="40" android:endX="37" android:endY="68" android:type="linear"><item android:color="#FF16DCEB" android:offset="0" /><item android:color="#FF2789F2" android:offset="1" /></gradient></aapt:attr>
+    <!-- Equalizer bars behind the wordmark. -->
+    <path android:pathData="M27,43 L27,65" android:strokeWidth="4.8" android:strokeLineCap="round" android:strokeColor="#FF2879EE" />
+    <path android:pathData="M37,32 L37,76" android:strokeWidth="4.8" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="37" android:startY="32" android:endX="37" android:endY="76" android:type="linear"><item android:color="#FF21DCEB" android:offset="0" /><item android:color="#FF16A8E8" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M47,31 L47,77" android:strokeWidth="6.5" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor"><gradient android:startX="47" android:startY="31" android:endX="47" android:endY="77" android:type="linear"><item android:color="#FF2BEA96" android:offset="0" /><item android:color="#FF10BFD7" android:offset="1" /></gradient></aapt:attr>
+    <path android:pathData="M48,22 L48,86" android:strokeWidth="4.8" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="48" android:startY="22" android:endX="48" android:endY="86" android:type="linear"><item android:color="#FF29E89A" android:offset="0" /><item android:color="#FF10BFD7" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M57,24 L57,84" android:strokeWidth="6.5" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor"><gradient android:startX="57" android:startY="24" android:endX="57" android:endY="84" android:type="linear"><item android:color="#FF29E89A" android:offset="0" /><item android:color="#FFF4F4F4" android:offset="1" /></gradient></aapt:attr>
+    <path android:pathData="M59,18 L59,90" android:strokeWidth="4.8" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="59" android:startY="18" android:endX="59" android:endY="90" android:type="linear"><item android:color="#FF29E89A" android:offset="0" /><item android:color="#FFF4F4F4" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M67,39 L67,69" android:strokeWidth="6.5" android:strokeLineCap="round">
-        <aapt:attr name="android:strokeColor"><gradient android:startX="67" android:startY="39" android:endX="67" android:endY="69" android:type="linear"><item android:color="#FFB520E3" android:offset="0" /><item android:color="#FFE31AC7" android:offset="1" /></gradient></aapt:attr>
+    <path android:pathData="M70,32 L70,76" android:strokeWidth="4.8" android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor"><gradient android:startX="70" android:startY="32" android:endX="70" android:endY="76" android:type="linear"><item android:color="#FFB520E3" android:offset="0" /><item android:color="#FFE20BD8" android:offset="1" /></gradient></aapt:attr>
     </path>
-    <path android:pathData="M78,47 L78,61" android:strokeWidth="6.5" android:strokeLineCap="round" android:strokeColor="#FF8C2DCE" />
+    <path android:pathData="M81,43 L81,65" android:strokeWidth="4.8" android:strokeLineCap="round" android:strokeColor="#FF8C2DCE" />
+
+    <!-- White AURA wordmark, kept compact for launcher readability. -->
+    <path android:pathData="M18,59 L24,40 L30,59 L26.5,59 L25.2,54.5 L22.8,54.5 L21.5,59 Z M23.6,51.5 L24.4,51.5 L24,48.7 Z" android:fillColor="#FFFFFFFF" />
+    <path android:pathData="M31,40 L35,40 L35,53 C35,55.2 36,56 37.5,56 C39,56 40,55.2 40,53 L40,40 L44,40 L44,53.5 C44,58 41.5,60 37.5,60 C33.5,60 31,58 31,53.5 Z" android:fillColor="#FFFFFFFF" />
+    <path android:pathData="M46,40 L52,40 C55.5,40 57.5,42 57.5,45 C57.5,47 56.5,48.4 55,49.2 L58.5,59 L54.2,59 L51.3,50.8 L50,50.8 L50,59 L46,59 Z M50,43.5 L50,47.5 L51.5,47.5 C52.8,47.5 53.5,46.8 53.5,45.5 C53.5,44.2 52.8,43.5 51.5,43.5 Z" android:fillColor="#FFFFFFFF" />
+    <path android:pathData="M60,59 L66,40 L72,59 L68.5,59 L67.2,54.5 L64.8,54.5 L63.5,59 Z M65.6,51.5 L66.4,51.5 L66,48.7 Z" android:fillColor="#FFE52A3D" />
+
+    <!-- Gold MUSIC & MEDIA lockup hint beneath AURA. -->
+    <path android:pathData="M24,64 L84,64 L84,67 L24,67 Z" android:fillColor="#FFEFB83D" />
+    <path android:pathData="M31,69 L77,69 L77,70.5 L31,70.5 Z" android:fillColor="#FFEFB83D" />
 </vector>
