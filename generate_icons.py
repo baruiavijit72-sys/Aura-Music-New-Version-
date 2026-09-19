@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
-"""Generate full-logo Android launcher PNGs without cropping.
+"""Generate Android launcher PNGs with circular-mask-safe padding.
 
-This script reads the complete source logomark at:
-    assets/branding/1789567332876.png
-and creates non-adaptive PNG launchers for every Android mipmap density.
-The artwork is fit into each square canvas without crop, mask, or adaptive 
-icon container behavior. This preserves the entire original logo exactly as
-provided.
+The full source logo is scaled down and placed on a solid dark square canvas.
+The artwork's complete bounding box is kept inside a conservative central circle,
+so Android launchers that apply circular masks do not cut the ring or text.
 
 Usage:
+    python -m pip install Pillow
     python generate_icons.py
-
-Requirements:
-    pip install Pillow
 """
 from pathlib import Path
 from PIL import Image, ImageOps
@@ -20,7 +15,10 @@ from PIL import Image, ImageOps
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "assets" / "branding" / "1789567332876.png"
 RES = ROOT / "app" / "src" / "main" / "res"
-
+BACKGROUND = (7, 11, 20, 255)  # AURA dark navy
+# Keep the logo within 72% of the square canvas diameter. This is deliberately
+# conservative for circular launcher masks and OEM icon treatments.
+SAFE_DIAMETER_RATIO = 0.72
 DENSITY_SIZES = {
     "mipmap-mdpi": 48,
     "mipmap-hdpi": 72,
@@ -30,34 +28,37 @@ DENSITY_SIZES = {
 }
 
 
-def ensure_pngs():
-    if not SRC.exists():
+def generate_icons() -> None:
+    if not SRC.is_file():
         raise FileNotFoundError(f"Source logo not found: {SRC}")
 
-    with Image.open(SRC) as src_img:
-        src_img = src_img.convert("RGBA")
-
+    with Image.open(SRC) as source:
+        source = source.convert("RGBA")
         for folder_name, size in DENSITY_SIZES.items():
             folder = RES / folder_name
             folder.mkdir(parents=True, exist_ok=True)
 
-            # Preserve the entire original logo without center-cropping.
-            fitted = ImageOps.contain(src_img, (size, size), method=Image.Resampling.LANCZOS)
-            canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+            safe_size = max(1, int(size * SAFE_DIAMETER_RATIO))
+            # contain() preserves the entire logo and never crops it.
+            fitted = ImageOps.contain(
+                source,
+                (safe_size, safe_size),
+                method=Image.Resampling.LANCZOS,
+            )
 
+            # Use opaque dark padding rather than transparent padding so the
+            # launcher mask cannot reveal a different background or trim edges.
+            canvas = Image.new("RGBA", (size, size), BACKGROUND)
             left = (size - fitted.width) // 2
             top = (size - fitted.height) // 2
             canvas.alpha_composite(fitted, (left, top))
 
-            launcher = folder / "ic_launcher.png"
-            round_launcher = folder / "ic_launcher_round.png"
-
-            canvas.save(launcher, format="PNG", optimize=True)
-            canvas.save(round_launcher, format="PNG", optimize=True)
-
-            print(f"Generated {launcher} and {round_launcher}")
+            for filename in ("ic_launcher.png", "ic_launcher_round.png"):
+                output = folder / filename
+                canvas.save(output, format="PNG", optimize=True)
+                print(f"Generated {output} ({size}x{size}, safe content {safe_size}px)")
 
 
 if __name__ == "__main__":
-    ensure_pngs()
-    print("Done.")
+    generate_icons()
+    print("Done: full logo padded for circular launcher masks.")
